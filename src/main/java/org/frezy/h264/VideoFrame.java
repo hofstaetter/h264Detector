@@ -27,16 +27,45 @@ public class VideoFrame extends Frame {
 
     public VideoFrame(String[] strings) {
         super(strings);
-        this.width = Integer.parseInt(strings[14].split("=")[1]);
-        this.height = Integer.parseInt(strings[15].split("=")[1]);
-        this.pixFmt = PixFmt.valueOf(strings[16].split("=")[1]);
-        this.sampleAspectRatio = new AspectRatio(strings[17].split("=")[1]);
-        this.pictType = PictType.valueOf(strings[18].split("=")[1]);
-        this.codedPictureNumber = Long.parseLong(strings[19].split("=")[1]);
-        this.displayPictureNumber = Integer.parseInt(strings[20].split("=")[1]);
-        this.interlacedFrame = Integer.parseInt(strings[21].split("=")[1]);
-        this.topFieldFirst = Integer.parseInt(strings[22].split("=")[1]);
-        this.repeatPict = Integer.parseInt(strings[23].split("=")[1]);
+
+        String key;
+        String[] pair = new String[2];
+        for(String string : strings) {
+            if(string.equals("[FRAME]")) continue;
+            if(string.equals("[/FRAME]")) return;
+
+            //key = pair[0], value = pair[1]
+            pair = string.split("=");
+
+            if(pair[1].equals("N/A")) continue;
+
+            //if(pair[0].equals("width"))
+                //this.width = Integer.parseInt(pair[1]);
+
+            //else if(pair[0].equals("pix_fmt"))
+                //this.pixFmt = PixFmt.valueOf(pair[1]);
+
+            //else if(pair[0].equals("sample_aspect_ratio"))
+                //this.sampleAspectRatio = new AspectRatio(pair[1]);
+
+            else if(pair[0].equals("pict_type"))
+                this.pictType = PictType.valueOf(pair[1]);
+
+            else if(pair[0].equals("coded_picture_number"))
+                this.codedPictureNumber = Long.parseLong(pair[1]);
+
+            //else if(pair[0].equals("display_picture_number"))
+                //this.displayPictureNumber = Integer.parseInt(pair[1]);
+
+            else if(pair[0].equals("interlaced_frame"))
+                this.interlacedFrame = Integer.parseInt(pair[1]);
+
+            //else if(pair[0].equals("top_field_first"))
+                //this.topFieldFirst = Integer.parseInt(pair[1]);
+
+            //else if(pair[0].equals("repeat_pict"))
+                //this.repeatPict = Integer.parseInt(pair[1]);
+        }
     }
 
     public String toString() {

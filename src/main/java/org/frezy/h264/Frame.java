@@ -1,5 +1,7 @@
 package main.java.org.frezy.h264;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.time.Duration;
@@ -16,33 +18,67 @@ public class Frame {
     protected int streamIndex;
     protected boolean keyFrame;
     protected long pktPts;
-    protected Duration pktPtsTime;
+    protected double pktPtsTime;
     protected long pktDts;
-    protected Duration pktDtsTime;
+    protected double pktDtsTime;
     protected long bestEffortTimestamp;
-    protected Duration bestEffortTimestampTime;
+    protected double bestEffortTimestampTime;
     protected long pktDuration;
-    protected Duration pktDurationTime;
+    protected double pktDurationTime;
     protected long pktPos;
     protected int pktSize;
 
     public Frame(String[] strings) {
-        this.mediaType = MediaType.valueOf(strings[1].split("=")[1]);
-        this.streamIndex = Integer.parseInt(strings[2].split("=")[1]);
-        this.keyFrame = Boolean.parseBoolean(strings[3].split("=")[1]);
-        this.pktPts = Long.parseLong(strings[4].split("=")[1]);
-        //
-        if(!strings[6].split("=")[1].equals("N/A"))
-            this.pktDts = Long.parseLong(strings[6].split("=")[1]);
-        //
-        this.bestEffortTimestamp = Long.parseLong(strings[8].split("=")[1]);
-        //
-        if(!strings[11].split("=")[1].equals("N/A"))
-            this.pktDuration = Long.parseLong(strings[10].split("=")[1]);
-        //
-        if(!strings[12].split("=")[1].equals("N/A"))
-            this.pktPos = Long.parseLong(strings[12].split("=")[1]);
-        this.pktSize = Integer.parseInt(strings[13].split("=")[1]);
+        String key;
+        String[] pair = new String[2];
+        for(String string : strings) {
+            if(string.equals("[FRAME]")) continue;
+            if(string.equals("[/FRAME]")) return;
+
+            //key = pair[0], value = pair[1]
+            pair = string.split("=");
+
+            if(pair[1].equals("N/A")) continue;
+
+            if(pair[0].equals("media_type"))
+                this.mediaType = MediaType.valueOf(pair[1]);
+
+            //else if(pair[0].equals("stream_index"))
+                //this.streamIndex = Integer.parseInt(pair[1]);
+
+            else if(pair[0].equals("key_frame"))
+                this.keyFrame = Boolean.parseBoolean(pair[1]);
+
+            else if(pair[0].equals("pkt_pts"))
+                this.pktPts = Long.parseLong(pair[1]);
+
+            else if(pair[0].equals("pkt_pts_time")) //TODO performance
+                this.pktPtsTime = Double.parseDouble(pair[1]);
+
+            //else if(pair[0].equals("pkt_dts"))
+                //this.pktDts = Long.parseLong(pair[1]);
+
+            //else if(pair[0].equals("pkt_dts_time")) //TODO performance
+                //this.pktDtsTime = Double.parseDouble(pair[1]);
+
+            //else if(pair[0].equals("best_effort_timestamp"))
+                //this.bestEffortTimestamp = Long.parseLong(pair[1]);
+
+            //else if(pair[0].equals("best_effort_timestamp_time")) //TODO performance
+                //this.bestEffortTimestampTime = Double.parseDouble(pair[1]);
+
+            //else if(pair[0].equals("pkt_duration"))
+                //this.pktDuration = Long.parseLong(pair[1]);
+
+            //else if(pair[0].equals("pkt_duration_time")) //TODO performance
+                //this.pktDurationTime = Double.parseDouble(pair[1]);
+
+            //else if(pair[0].equals("pkt_pos"))
+                //this.pktPos = Long.parseLong(pair[1]);
+
+            else if(pair[0].equals("pkt_size"))
+                this.pktSize = Integer.parseInt(pair[1]);
+        }
     }
 
     public String toString() {
@@ -51,6 +87,7 @@ public class Frame {
                 "   stream_index: " + getStreamIndex() + "\n" +
                 "   key_frame: " + isKeyFrame() + "\n" +
                 "   pkt_pts: " + getPktPts() + "\n" +
+                "   pkt_pts_time: " + getPktPtsTime() + "\n" +
                 "   pkt_dts: " + getPktDts() + "\n" +
                 "   best_effort_timestamp: " + getBestEffortTimestamp() + "\n" +
                 "   pkt_duration: " + getPktDuration() + "\n" +
@@ -94,11 +131,11 @@ public class Frame {
         this.pktPts = pktPts;
     }
 
-    public Duration getPktPtsTime() {
+    public double getPktPtsTime() {
         return pktPtsTime;
     }
 
-    public void setPktPtsTime(Duration pktPtsTime) {
+    public void setPktPtsTime(double pktPtsTime) {
         this.pktPtsTime = pktPtsTime;
     }
 
@@ -110,11 +147,11 @@ public class Frame {
         this.pktDts = pktDts;
     }
 
-    public Duration getPktDtsTime() {
+    public double getPktDtsTime() {
         return pktDtsTime;
     }
 
-    public void setPktDtsTime(Duration pktDtsTime) {
+    public void setPktDtsTime(double pktDtsTime) {
         this.pktDtsTime = pktDtsTime;
     }
 
@@ -126,11 +163,11 @@ public class Frame {
         this.bestEffortTimestamp = bestEffortTimestamp;
     }
 
-    public Duration getBestEffortTimestampTime() {
+    public double getBestEffortTimestampTime() {
         return bestEffortTimestampTime;
     }
 
-    public void setBestEffortTimestampTime(Duration bestEffortTimestampTime) {
+    public void setBestEffortTimestampTime(double bestEffortTimestampTime) {
         this.bestEffortTimestampTime = bestEffortTimestampTime;
     }
 
@@ -142,11 +179,11 @@ public class Frame {
         this.pktDuration = pktDuration;
     }
 
-    public Duration getPktDurationTime() {
+    public double getPktDurationTime() {
         return pktDurationTime;
     }
 
-    public void setPktDurationTime(Duration pktDurationTime) {
+    public void setPktDurationTime(double pktDurationTime) {
         this.pktDurationTime = pktDurationTime;
     }
 

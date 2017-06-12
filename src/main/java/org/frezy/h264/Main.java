@@ -1,5 +1,6 @@
 package main.java.org.frezy.h264;
 
+import main.java.org.frezy.h264Detector.BitrateDetector;
 import main.java.org.frezy.h264Detector.Detector;
 
 import java.awt.image.BufferedImage;
@@ -26,21 +27,26 @@ public class Main {
         }
 
         //Media media = new Media(input);
+        if(input.isEmpty()) { //REMOVE THIS
+            input = "rtsp://admin:uni2017$@172.16.173.210:554/rtsp_live0";
+        }
 
         Stream stream = new Stream(input);
         stream.open();
 
-        Detector detector = new Detector(stream);
+        BitrateDetector bitrateDetector = new BitrateDetector(stream);
+        StreamStatistics streamStatistics = new StreamStatistics(stream);
 
+        Long lastFramesCount = 0L;
         while(true) {
-            System.out.println("State: " + stream.getThreadState());
-            System.out.println("Readed Frames: " + stream.getReadedFramesCount());
-            System.out.println("Average Package Size: " + stream.getAveragePackageSize());
+            //System.out.println("State: " + stream.getThreadState());
+            //System.out.println("Readed Frames: " + stream.getReadedFramesCount());
+            //System.out.println("Average Package Size: " + stream.getAveragePackageSize());
+            //System.out.println("FPS: " + streamStatistics.getFramesPerSecond());
+            //lastFramesCount = stream.getReadedFramesCount();
+            //System.out.println("AvgBitrate: " + streamStatistics.getAverageBitrate());
 
-            System.out.print(String.format("\033[%dA",3));
-
-            if(detector.isMovmentDetected())
-                System.out.println("MOVEMENT DETECTED!");
+            //System.out.print(String.format("\033[%dA",3));
 
             try {
                 Thread.sleep(1000);

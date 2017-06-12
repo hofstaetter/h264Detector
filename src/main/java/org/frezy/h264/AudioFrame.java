@@ -20,10 +20,30 @@ public class AudioFrame extends Frame {
 
     public AudioFrame(String[] strings) {
         super(strings);
-        this.sampleFmt = SampleFmt.valueOf(strings[14].split("=")[1]);
-        this.nbSamples = Integer.parseInt(strings[15].split("=")[1]);
-        this.channels = Short.parseShort(strings[16].split("=")[1]);
-        this.channelLayout = ChannelLayout.valueOf(strings[17].split("=")[1]);
+
+        String key;
+        String[] pair = new String[2];
+        for(String string : strings) {
+            if(string.equals("[FRAME]")) continue;
+            if(string.equals("[/FRAME]")) return;
+
+            //key = pair[0], value = pair[1]
+            pair = string.split("=");
+
+            if(pair[1].equals("N/A")) continue;
+
+            if(pair[0].equals("sample_fmt"))
+                this.sampleFmt = SampleFmt.valueOf(pair[1]);
+
+            else if(pair[0].equals("nb_samples"))
+                this.nbSamples = Integer.parseInt(pair[1]);
+
+            else if(pair[0].equals("channels"))
+                this.channels = Short.parseShort(pair[1]);
+
+            else if(pair[0].equals("channel_layout"))
+                this.channelLayout = ChannelLayout.valueOf(pair[1]);
+        }
     }
 
     public String toString() {

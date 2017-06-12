@@ -14,6 +14,9 @@ import java.util.Scanner;
 /**
  * Created by matthias on 05.05.17.
  */
+
+//DO NOT USE
+
 public class Media {
     public LinkedList<Frame> frames;
     private String input;

@@ -6,31 +6,28 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by matthias on 09.05.17.
  */
-public class Stream {
-    private static final short BUFFER_SIZE = 24 * 5;
 
-    private ArrayBlockingQueue<Frame> frames;
-    private ArrayBlockingQueue<Double> averagePackageSizes;
+public class Stream {
     private Thread thread;
     private String input;
 
-    private volatile long readedFramesCount;
-    private volatile long iframes;
-    private volatile long pframes;
-    private volatile long bframes;
-    private volatile double averagePackageSize;
+    private FrameReader frameReader;
+    private StreamBuffer streamBuffer;
 
     public Stream(String input) {
         this.input = input;
-        this.frames = new ArrayBlockingQueue<Frame>(BUFFER_SIZE);
-        this.averagePackageSizes = new ArrayBlockingQueue<Double>(2);
 
-        this.thread = new Thread(new FrameReader(this.input));
+        this.frameReader = new FrameReader(this.input);
+        this.thread = new Thread(this.frameReader);
+
+        this.streamBuffer = new StreamBuffer(this);
     }
 
     public void open() {
@@ -41,31 +38,11 @@ public class Stream {
         this.thread.interrupt();
     }
 
-    private void calculateAveragePackageSize() {
-        /*averagePackageSize = 0;
-        for(Frame frame : this.frames) {
-            averagePackageSize += frame.getPktSize();
-        }
-        averagePackageSize /= BUFFER_SIZE;*/
-        //Java 8
-        this.setAveragePackageSize(frames.stream().mapToInt(x -> x.getPktSize()).average().orElseThrow(IllegalStateException::new));
+    public void addObserver(Observer o) {
+        this.frameReader.addObserver(o);
     }
 
-    public long getReadedFramesCount() {
-        return readedFramesCount;
-    }
-
-    public void setReadedFramesCount(long readedFramesCount) {
-        this.readedFramesCount = readedFramesCount;
-    }
-
-    public ArrayBlockingQueue<Frame> getFrames() {
-        return frames;
-    }
-
-    public void setFrames(ArrayBlockingQueue<Frame> frames) {
-        this.frames = frames;
-    }
+    //region Getter and Setters
 
     public Thread.State getThreadState() {
         return this.thread.getState();
@@ -79,43 +56,17 @@ public class Stream {
         this.input = input;
     }
 
-    public long getIframes() {
-        return iframes;
+    public StreamBuffer getStreamBuffer() {
+        return streamBuffer;
     }
 
-    public void setIframes(long iframes) {
-        this.iframes = iframes;
+    public void setStreamBuffer(StreamBuffer streamBuffer) {
+        this.streamBuffer = streamBuffer;
     }
 
-    public long getPframes() {
-        return pframes;
-    }
+    //endregion
 
-    public void setPframes(long pframes) {
-        this.pframes = pframes;
-    }
-
-    public long getBframes() {
-        return bframes;
-    }
-
-    public void setBframes(long bframes) {
-        this.bframes = bframes;
-    }
-
-    public double getAveragePackageSize() {
-        return averagePackageSize;
-    }
-
-    public void setAveragePackageSize(double averagePackageSize) {
-        this.averagePackageSize = averagePackageSize;
-    }
-
-    public ArrayBlockingQueue<Double> getAveragePackageSizes() {
-        return averagePackageSizes;
-    }
-
-    class FrameReader implements Runnable {
+    class FrameReader extends Observable implements Runnable {
         private String input;
 
         public FrameReader(String input) {
@@ -126,7 +77,7 @@ public class Stream {
         public void run() {
             try {
                 while (!Thread.interrupted()) {
-                    Process process = Runtime.getRuntime().exec("./ffprobe " + this.input + " -show_frames");
+                    Process process = Runtime.getRuntime().exec("./ffprobe " + this.input + " -show_frames "); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
 
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                     //BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
@@ -136,13 +87,11 @@ public class Stream {
                     String string;
                     String[] framestring = new String[25];
                     int count = 0;
-                    Frame.MediaType mediaType;
                     while ((string = stdInput.readLine()) != null) {
-                        //read full frame string
-                        //System.out.println("READ: " + string);
                         framestring[count] = string;
                         count++;
                         if (string.equals("[/FRAME]")) { //frame end
+
                             //insert frame into buffer
                             Frame frame;
                             if (framestring[1].split("=")[1].equals("video")) {
@@ -151,14 +100,8 @@ public class Stream {
                                 frame = new AudioFrame(framestring);
                             }
 
-                            //remove first element from buffer if overflow
-                            if(frames.size() >= BUFFER_SIZE) {
-                                frames.poll();
-                            }
-                            frames.put(frame);
-
-                            //update statistics
-                            updateStatistics(frame);
+                            this.setChanged();
+                            this.notifyObservers(frame);
 
                             //reset variables
                             count = 0;
@@ -172,42 +115,6 @@ public class Stream {
                 e.printStackTrace();
             }
             System.out.println("Stream ends...");
-
-
-        }
-
-        private void insertFrameIntoBuffer(Frame frame) {
-
-        }
-
-        private void updateStatistics(Frame frame) {
-            if(frame instanceof VideoFrame) { //videoframe
-                updateAveragePktSize((VideoFrame)frame);
-                updateFrameTypes((VideoFrame)frame);
-            } else { //audioframe
-
-            }
-        }
-
-        private void updateAveragePktSize(VideoFrame videoFrame) {
-            averagePackageSize = (averagePackageSize + videoFrame.getPktSize()) / 2;
-
-            if(averagePackageSizes.size() >= 2) {
-                averagePackageSizes.poll();
-            }
-            try {
-                averagePackageSizes.put(averagePackageSize);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        private void updateFrameTypes(VideoFrame videoFrame) {
-            if(videoFrame.getPictType() == VideoFrame.PictType.I)
-                iframes++;
-            else if(videoFrame.getPictType() == VideoFrame.PictType.P)
-                pframes++;
-            else bframes++;
         }
     }
 }
