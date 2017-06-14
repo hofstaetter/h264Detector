@@ -16,7 +16,6 @@ public class BitrateDetector extends Detector implements Observer {
     private double averageDefaultBitrate = 0.0;
 
     private boolean sync = false;
-    private boolean state = false;
 
     public BitrateDetector(Stream stream) {
         super(stream);
@@ -30,13 +29,13 @@ public class BitrateDetector extends Detector implements Observer {
     public void detect(VideoFrame videoFrame) {
         if((averageDefaultBitrate + (averageDefaultBitrate * 0.3)) < videoFrame.getPktSize()) {
             if(this.detectCounter == 0)
-                if(!state)
+                if(!super.state)
                     detected(true);
             if(this.detectCounter < 3)
                 this.detectCounter++;
         } else {
             if(this.detectCounter == 0)
-                if(state)
+                if(super.state)
                     detected(false);
             if(this.detectCounter > -3)
                 this.detectCounter--;
@@ -45,14 +44,15 @@ public class BitrateDetector extends Detector implements Observer {
 
     public void detected(boolean state) {
         System.out.println("MOVEMENT CHANGED! " + state);
-        this.state = state;
-        this.setChanged();
-        this.notifyObservers(state);
+        super.detected(state);
     }
 
     private int resyncCounter = 0;
 
     public void resync(VideoFrame videoFrame) {
+        //case bitrate rise
+        //TODO
+
         //case bitrate drop
         if((averageDefaultBitrate - (averageDefaultBitrate * 0.3)) > videoFrame.getPktSize()) {
             resyncCounter++;
@@ -60,6 +60,7 @@ public class BitrateDetector extends Detector implements Observer {
             if(resyncCounter >= 6) {
                 sync = false;
                 averageDefaultBitrate = 0;
+                framesCount = 0;
                 resyncCounter = 0;
             }
         } else {
@@ -71,7 +72,7 @@ public class BitrateDetector extends Detector implements Observer {
     private long framesCount = 0;
 
     public void sync(VideoFrame videoFrame) {
-        if(videoFrame.getPictType() == P) { //IMPROVE THIS, movement from start
+        if(videoFrame.getPictType() == P) {
             averageDefaultBitrate = (averageDefaultBitrate * framesCount + videoFrame.getPktSize()) / (framesCount + 1);
             System.out.println(averageDefaultBitrate);
 
@@ -81,7 +82,7 @@ public class BitrateDetector extends Detector implements Observer {
             else
                 syncCount = 0;
 
-            if(syncCount >= 48) sync = true;
+            if(syncCount >= 24) sync = true;
             System.out.println(sync);
             framesCount++;
         }
@@ -101,50 +102,6 @@ public class BitrateDetector extends Detector implements Observer {
                 resync(videoFrame);
             }
             else sync(videoFrame);
-
-            //System.out.println(videoFrame.getPktSize() + " " + videoFrame.getPictType());
-
-            /*if (averageDefaultBitrate < frame.getPktSize()) { //average bitrate < than actual frame
-                if ((averageDefaultBitrate + (averageDefaultBitrate * 0.3)) < frame.getPktSize()) { //frame out of range
-                    if (secondChances > 0) { //has average another chance?
-                        secondChances--;
-                        return;
-                    }
-                    averageDefaultBitrate = frame.getPktSize();
-                    secondChances = 1;
-                    this.secondChanceCounter = 0;
-                } else { //frame in range
-                    //small average bitrate correction
-                    averageDefaultBitrate = (averageDefaultBitrate + frame.getPktSize()) / 2;
-
-                    //second chance add
-                    this.secondChanceCounter++;
-                    if (this.secondChanceCounter == 3) {
-                        secondChances++;
-                        this.secondChanceCounter = 0;
-                    }
-                }
-            } else {
-                if ((averageDefaultBitrate - (averageDefaultBitrate * 0.3)) > frame.getPktSize()) {
-                    if (secondChances > 0) { //has average another chance?
-                        secondChances--;
-                        return;
-                    }
-                    averageDefaultBitrate = frame.getPktSize();
-                    secondChances = 1;
-                    this.secondChanceCounter = 0;
-                } else { //frame in range
-                    //small average bitrate correction
-                    averageDefaultBitrate = (averageDefaultBitrate + frame.getPktSize()) / 2;
-
-                    //second chance add
-                    this.secondChanceCounter++;
-                    if (this.secondChanceCounter == 3) {
-                        secondChances++;
-                        this.secondChanceCounter = 0;
-                    }
-                }
-            }*/
         }
     }
 }
