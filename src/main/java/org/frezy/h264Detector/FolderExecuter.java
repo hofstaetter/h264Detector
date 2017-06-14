@@ -2,8 +2,10 @@ package main.java.org.frezy.h264Detector;
 
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 
 /**
@@ -18,6 +20,7 @@ public class FolderExecuter implements Observer {
         detector.addObserver(this);
 
         files = new LinkedList<File>();
+        readDirectory(folder);
     }
 
     public void readDirectory(File folder) {
@@ -33,7 +36,7 @@ public class FolderExecuter implements Observer {
     public void executeDirectory() {
         for(File file : files) {
             Executer executer = null;
-            if(FilenameUtils.getExtension(file.getName()) == "jar") {
+            if(FilenameUtils.getExtension(file.getName()).equals("jar")) {
                 executer = new JavaExecuter(file);
             }
 
@@ -53,7 +56,7 @@ public class FolderExecuter implements Observer {
         private File file;
 
         public Executer(File file) {
-
+            this.file = file;
         }
 
         @Override
@@ -69,7 +72,23 @@ public class FolderExecuter implements Observer {
 
         @Override
         public void run() {
+            try {
+                Process process = Runtime.getRuntime().exec("java -jar " + super.file.getAbsolutePath());
 
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+                String string;
+                while ((string = stdInput.readLine()) != null) {
+                    System.out.println(string);
+                }
+
+                while((string = stdError.readLine()) != null) {
+                    System.out.println(string);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -78,7 +97,23 @@ public class FolderExecuter implements Observer {
 
         @Override
         public void run() {
-            super.run();
+            try {
+                Process process = Runtime.getRuntime().exec(super.file.getAbsolutePath());
+
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+                String string;
+                while ((string = stdInput.readLine()) != null) {
+                    System.out.println(string);
+                }
+
+                while((string = stdError.readLine()) != null) {
+                    System.out.println(string);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

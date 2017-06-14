@@ -8,7 +8,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  * Created by matthias on 06.06.17.
  */
 public class StreamBuffer implements Observer {
-    private static final short BUFFER_SIZE = 24 * 15;
+    private static final short BUFFER_SIZE = 24 * 5;
 
     private ArrayBlockingQueue<Frame> frames;
 

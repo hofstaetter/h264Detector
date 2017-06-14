@@ -15,12 +15,6 @@ public class Detector extends Observable {
         this.stream = stream;
     }
 
-    public boolean isMovmentDetected() {
-        //TODO dynamic
-
-        return true;
-    }
-
     private void movementDetected() {
         this.setChanged();
         this.notifyObservers(true);
