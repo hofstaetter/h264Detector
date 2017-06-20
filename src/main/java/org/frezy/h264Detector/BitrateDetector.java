@@ -27,7 +27,7 @@ public class BitrateDetector extends Detector implements Observer {
     private short detectCounter = 0;
 
     public void detect(VideoFrame videoFrame) {
-        if((averageDefaultBitrate + (averageDefaultBitrate * 0.3)) < videoFrame.getPktSize()) {
+        if((averageDefaultBitrate + (averageDefaultBitrate * 0.10)) < videoFrame.getPktSize()) {
             if(this.detectCounter == 0)
                 if(!super.state)
                     detected(true);
@@ -57,7 +57,7 @@ public class BitrateDetector extends Detector implements Observer {
         if((averageDefaultBitrate - (averageDefaultBitrate * 0.3)) > videoFrame.getPktSize()) {
             resyncCounter++;
 
-            if(resyncCounter >= 6) {
+            if(resyncCounter >= 24) {
                 sync = false;
                 averageDefaultBitrate = 0;
                 framesCount = 0;
@@ -76,8 +76,8 @@ public class BitrateDetector extends Detector implements Observer {
             averageDefaultBitrate = (averageDefaultBitrate * framesCount + videoFrame.getPktSize()) / (framesCount + 1);
             System.out.println(averageDefaultBitrate);
 
-            if((averageDefaultBitrate < videoFrame.getPktSize() && (averageDefaultBitrate + (averageDefaultBitrate * 0.3)) > videoFrame.getPktSize()) ||
-                    (averageDefaultBitrate > videoFrame.getPktSize() && (averageDefaultBitrate - (averageDefaultBitrate * 0.3)) < videoFrame.getPktSize()))
+            if((averageDefaultBitrate < videoFrame.getPktSize() && (averageDefaultBitrate + (averageDefaultBitrate * 0.10)) > videoFrame.getPktSize()) ||
+                    (averageDefaultBitrate > videoFrame.getPktSize() && (averageDefaultBitrate - (averageDefaultBitrate * 0.10)) < videoFrame.getPktSize()))
                 syncCount++;
             else
                 syncCount = 0;

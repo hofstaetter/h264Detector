@@ -15,9 +15,11 @@ import java.io.InputStreamReader;
  */
 public class Main {
     public static void main(String[] args) {
-        System.out.println("h.264 Inspector | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com)");
+        //main.java.org.frezy.h264Inspector.Graph.main(args);
 
-        System.out.print("Please give me some input: ");
+        System.out.println("h.264 Inspector | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com) | Matthias.Hofstaetter@fau.de");
+
+        System.out.print("Stream input: ");
 
         //read input source
         String input = "";
@@ -30,26 +32,19 @@ public class Main {
 
         //Media media = new Media(input);
         if(input.isEmpty()) { //REMOVE THIS
-            input = "rtsp://admin:uni2017$@172.16.173.210:554/rtsp_live0";
+            input = "rtsp://admin:21JAenner$@172.16.173.210:554/rtsp_live0";
         }
 
         Stream stream = new Stream(input);
         stream.open();
 
-        BitrateDetector bitrateDetector = new BitrateDetector(stream);
-        StreamStatistics streamStatistics = new StreamStatistics(stream);
-        FolderExecuter folderExecuter = new FolderExecuter(bitrateDetector, new File("./execute"));
+        //BitrateDetector bitrateDetector = new BitrateDetector(stream);
+        //StreamStatistics streamStatistics = new StreamStatistics(stream);
+        //FolderExecuter folderExecuter = new FolderExecuter(bitrateDetector, new File("./execute"));
 
         Long lastFramesCount = 0L;
         while(true) {
-            //System.out.println("State: " + stream.getThreadState());
-            //System.out.println("Readed Frames: " + stream.getReadedFramesCount());
-            //System.out.println("Average Package Size: " + stream.getAveragePackageSize());
-            //System.out.println("FPS: " + streamStatistics.getFramesPerSecond());
-            //lastFramesCount = stream.getReadedFramesCount();
-            //System.out.println("AvgBitrate: " + streamStatistics.getAverageBitrate());
-
-            //System.out.print(String.format("\033[%dA",3));
+            //System.out.println("avg Bitrate: " + streamStatistics.getAverageBitrate());
 
             try {
                 Thread.sleep(1000);

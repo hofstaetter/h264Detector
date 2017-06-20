@@ -1,15 +1,15 @@
 package main.java.org.frezy.h264Detector;
 
 import main.java.org.frezy.h264.Stream;
+import main.java.org.frezy.util.Pair;
 
 import java.util.Observable;
-import java.util.Observer;
 
 /**
  * Created by matthias on 15.05.17.
  */
 public class Detector extends Observable {
-    private Stream stream;
+    public Stream stream;
 
     protected boolean state;
 

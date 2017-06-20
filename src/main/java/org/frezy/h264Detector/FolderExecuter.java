@@ -1,5 +1,7 @@
 package main.java.org.frezy.h264Detector;
 
+import main.java.org.frezy.h264.Stream;
+import main.java.org.frezy.util.Pair;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.BufferedReader;
@@ -15,9 +17,11 @@ public class FolderExecuter implements Observer {
     final private List<String> supportedExtentions = Arrays.asList("jar", "sh");
 
     private LinkedList<File> files;
+    private Detector detector;
 
     public FolderExecuter(Detector detector, File folder) {
-        detector.addObserver(this);
+        this.detector = detector;
+        this.detector.addObserver(this);
 
         files = new LinkedList<File>();
         readDirectory(folder);
@@ -37,7 +41,7 @@ public class FolderExecuter implements Observer {
         for(File file : files) {
             Executer executer = null;
             if(FilenameUtils.getExtension(file.getName()).equals("jar")) {
-                executer = new JavaExecuter(file);
+                executer = new JavaExecuter(file, this.detector.stream.getInput());
             }
 
             Thread thread = new Thread(executer);
@@ -47,6 +51,7 @@ public class FolderExecuter implements Observer {
 
     @Override
     public void update(Observable o, Object arg) { //executed if movement detected
+
         if((boolean)arg) {
             executeDirectory();
         }
@@ -54,9 +59,11 @@ public class FolderExecuter implements Observer {
 
     class Executer implements Runnable {
         private File file;
+        private String parameter;
 
-        public Executer(File file) {
+        public Executer(File file, String parameter) {
             this.file = file;
+            this.parameter = parameter;
         }
 
         @Override
@@ -66,14 +73,14 @@ public class FolderExecuter implements Observer {
     }
 
     class JavaExecuter extends Executer {
-        public JavaExecuter(File file) {
-            super(file);
+        public JavaExecuter(File file, String parameter) {
+            super(file, parameter);
         }
 
         @Override
         public void run() {
             try {
-                Process process = Runtime.getRuntime().exec("java -jar " + super.file.getAbsolutePath());
+                Process process = Runtime.getRuntime().exec("java -jar " + super.file.getAbsolutePath() + " " + super.parameter);
 
                 BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
@@ -93,12 +100,12 @@ public class FolderExecuter implements Observer {
     }
 
     class BashExecuter extends Executer {
-        public BashExecuter(File file) { super(file); }
+        public BashExecuter(File file, String parameter) { super(file, parameter); }
 
         @Override
         public void run() {
             try {
-                Process process = Runtime.getRuntime().exec(super.file.getAbsolutePath());
+                Process process = Runtime.getRuntime().exec(super.file.getAbsolutePath() + " " + super.parameter);
 
                 BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
