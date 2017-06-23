@@ -2,7 +2,7 @@ package main.java.org.frezy.h264;
 
 import main.java.org.frezy.h264Detector.BitrateDetector;
 import main.java.org.frezy.h264Detector.Detector;
-import main.java.org.frezy.h264Detector.FolderExecuter;
+import main.java.org.frezy.h264Detector.FolderExecutor;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -38,7 +38,7 @@ public class Main {
         Stream stream = new Stream(input);
         stream.open();
 
-        //BitrateDetector bitrateDetector = new BitrateDetector(stream);
+        BitrateDetector bitrateDetector = new BitrateDetector(stream);
         //StreamStatistics streamStatistics = new StreamStatistics(stream);
         //FolderExecuter folderExecuter = new FolderExecuter(bitrateDetector, new File("./execute"));
 

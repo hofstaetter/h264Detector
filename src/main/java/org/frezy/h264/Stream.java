@@ -94,14 +94,14 @@ public class Stream {
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                     BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
-                    System.out.println("Starting worker...");
+                    System.out.println("Starting FrameCapture thraed...");
 
                     long count = 0;
                     File[] files;
                     String string;
                     while ((string = stdError.readLine()) != null) {
                         if(string.contains("plane_checksum")) {
-                            System.out.println(string);
+                            //System.out.println(string);
                             count++;
                             if(count >= 24) {
                                 files = tempDirectory.listFiles();
@@ -142,7 +142,7 @@ public class Stream {
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                     //BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
-                    System.out.println("Starting worker...");
+                    System.out.println("Starting FrameReader thread...");
 
                     String string;
                     String[] framestring = new String[25];
@@ -156,8 +156,8 @@ public class Stream {
                             Frame frame;
                             if (framestring[1].split("=")[1].equals("video")) {
                                 frame = new VideoFrame(framestring);
-                                if(((VideoFrame)frame).getPictType() == VideoFrame.PictType.I)
-                                    System.out.println("pts: " + ((VideoFrame)frame).getPktPts() + " pts_time: " + ((VideoFrame)frame).getPktPtsTime());
+                                /*if(((VideoFrame)frame).getPictType() == VideoFrame.PictType.I)
+                                    System.out.println("pts: " + ((VideoFrame)frame).getPktPts() + " pts_time: " + ((VideoFrame)frame).getPktPtsTime());*/
                             } else {
                                 frame = new AudioFrame(framestring);
                             }

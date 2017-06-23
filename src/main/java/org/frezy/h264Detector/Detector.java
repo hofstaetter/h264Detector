@@ -9,7 +9,7 @@ import java.util.Observable;
  * Created by matthias on 15.05.17.
  */
 public class Detector extends Observable {
-    public Stream stream;
+    protected Stream stream;
 
     protected boolean state;
 

@@ -6,7 +6,11 @@ import main.java.org.frezy.h264.VideoFrame;
 
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
+import static main.java.org.frezy.h264.VideoFrame.PictType.I;
 import static main.java.org.frezy.h264.VideoFrame.PictType.P;
 
 /**
@@ -31,13 +35,13 @@ public class BitrateDetector extends Detector implements Observer {
             if(this.detectCounter == 0)
                 if(!super.state)
                     detected(true);
-            if(this.detectCounter < 3)
+            if(this.detectCounter < 5)
                 this.detectCounter++;
         } else {
             if(this.detectCounter == 0)
                 if(super.state)
                     detected(false);
-            if(this.detectCounter > -3)
+            if(this.detectCounter > -5)
                 this.detectCounter--;
         }
     }
@@ -72,22 +76,31 @@ public class BitrateDetector extends Detector implements Observer {
     private long framesCount = 0;
 
     public void sync(VideoFrame videoFrame) {
-        if(videoFrame.getPictType() == P) {
-            averageDefaultBitrate = (averageDefaultBitrate * framesCount + videoFrame.getPktSize()) / (framesCount + 1);
-            System.out.println(averageDefaultBitrate);
+        if(videoFrame.getPictType() == I) return;
 
-            if((averageDefaultBitrate < videoFrame.getPktSize() && (averageDefaultBitrate + (averageDefaultBitrate * 0.10)) > videoFrame.getPktSize()) ||
-                    (averageDefaultBitrate > videoFrame.getPktSize() && (averageDefaultBitrate - (averageDefaultBitrate * 0.10)) < videoFrame.getPktSize()))
-                syncCount++;
-            else
-                syncCount = 0;
+        if(averageDefaultBitrate == -1) {
+            averageDefaultBitrate = videoFrame.getPktSize();
+            return;
+        }
+        double newAverageDefaultBitrate = 0.1 * videoFrame.getPktSize() + 0.9 * averageDefaultBitrate;
 
-            if(syncCount >= 24) sync = true;
-            System.out.println(sync);
-            framesCount++;
+        double differenceBetweenAverages = (newAverageDefaultBitrate > averageDefaultBitrate) ? newAverageDefaultBitrate - averageDefaultBitrate : averageDefaultBitrate - newAverageDefaultBitrate; //diffence between old and new average
+
+        //if
+        if(averageDefaultBitrate * 0.05 < differenceBetweenAverages) {
+            syncCount = 0;
+            averageDefaultBitrate = newAverageDefaultBitrate;
+            //System.out.println("SYNC RESET");
+            return;
         }
 
-        System.out.println(averageDefaultBitrate);
+        averageDefaultBitrate = newAverageDefaultBitrate;
+
+        syncCount++;
+
+        if(syncCount >= 96) sync = true;
+
+        //System.out.println(averageDefaultBitrate);
     }
 
     @Override
@@ -100,8 +113,36 @@ public class BitrateDetector extends Detector implements Observer {
             if(sync) {
                 detect(videoFrame);
                 resync(videoFrame);
+                stable(videoFrame);
             }
             else sync(videoFrame);
         }
+    }
+
+    //test
+    private final int STABLE_BUFFER_SIZE = 480;
+    private Queue<Boolean> stableList = new ArrayBlockingQueue<Boolean>(STABLE_BUFFER_SIZE);
+
+    public void stable(VideoFrame videoFrame) {
+        if(videoFrame.getPictType() == I) return;
+
+        if(stableList.size() == STABLE_BUFFER_SIZE) stableList.remove();
+
+        double newAverageDefaultBitrate = 0.01 * videoFrame.getPktSize() + 0.99 * averageDefaultBitrate;
+        if(newAverageDefaultBitrate > averageDefaultBitrate) { //rise
+            stableList.add(true);
+        } else if (newAverageDefaultBitrate < averageDefaultBitrate) { //fall
+            stableList.add(false);
+        } else return;
+
+        int count = 0;
+        for(Boolean b : stableList) {
+            if(b) count++;
+            else count--;
+        }
+
+        averageDefaultBitrate = newAverageDefaultBitrate;
+
+        System.out.println("STABLE: " + count);
     }
 }
