@@ -7,8 +7,8 @@ import java.util.HashMap;
 /**
  * Created by matthias on 23.06.17.
  */
-class JavaScript extends Script {
-    public JavaScript(File file, HashMap<String, String> parameters) {
+class JavaExecuteable extends Executeable {
+    public JavaExecuteable(File file, HashMap<String, String> parameters) {
         super(file, parameters);
     }
 

@@ -1,9 +1,9 @@
 package main.java.org.frezy.h264Detector;
 
-import org.apache.commons.io.FilenameUtils;
-
 import java.io.File;
 import java.util.*;
+
+import static main.java.org.frezy.h264Detector.Main.INPUT;
 
 /**
  * Created by matthias on 23.06.17.
@@ -11,34 +11,24 @@ import java.util.*;
 public class FileExecutor extends Executor implements Observer {
     private Detector detector;
 
-    public FileExecutor(Detector detector, File folder) {
+    public FileExecutor(Detector detector, File file) {
         this.detector = detector;
         this.detector.addObserver(this);
 
-        this.file = folder;
+
+        this.file = file;
     }
 
     @Override
     public void update(Observable o, Object arg) { //executed if movement detected
         if((boolean)arg) {
-            if(Script.isFileSupported(this.file)) {
-                Script executer = null;
-                String extension = FilenameUtils.getExtension(file.getName());
-                if (extension.equals("jar")) {
-                    HashMap<String, String> parameters = new HashMap<String, String>();
-                    parameters.put("input", this.detector.stream.getInput());
+            HashMap<String, String> parameters = new HashMap<String, String>();
+            parameters.put("input", INPUT);
+            //parameters.put("framesDir", this.detector.stream.getTempDirectory().getAbsolutePath());
 
-                    executer = new JavaScript(file, parameters);
-                } else if(extension.equals("sh")) {
-                    HashMap<String, String> parameters = new HashMap<String, String>();
-                    parameters.put("input", this.detector.stream.getInput());
-
-                    executer = new BashScript(file, parameters);
-                }
-
-                Thread thread = new Thread(executer);
-                thread.start();
-            }
+            Executeable executeable = Executeable.getScriptClass(this.file, parameters);
+            Thread thread = new Thread(executeable);
+            thread.start();
         }
     }
 }

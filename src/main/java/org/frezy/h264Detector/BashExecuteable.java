@@ -7,8 +7,8 @@ import java.util.HashMap;
 /**
  * Created by matthias on 23.06.17.
  */
-class BashScript extends Script {
-    public BashScript(File file, HashMap<String, String> parameters) {
+class BashExecuteable extends Executeable {
+    public BashExecuteable(File file, HashMap<String, String> parameters) {
         super(file, parameters);
     }
 

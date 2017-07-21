@@ -19,6 +19,8 @@ public class FolderExecutor extends Executor {
     public FolderExecutor(Detector detector, File folder) {
         this.file = folder;
 
+        this.executors = new ArrayList<Executor>();
+
         for(File file : folder.listFiles()) {
             if(file.isDirectory()) executors.add(new FolderExecutor(detector, folder));
 

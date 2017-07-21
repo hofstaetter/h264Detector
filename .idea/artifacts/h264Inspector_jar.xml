@@ -1,9 +1,11 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="h264Inspector:jar">
+  <artifact name="h264Inspector:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/h264Inspector_jar</output-path>
-    <root id="archive" name="h264Inspector.jar">
-      <element id="module-output" name="h264Inspector" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/commons-io-2.5/commons-io-2.5.jar" path-in-jar="/" />
+    <root id="root">
+      <element id="archive" name="h264Inspector.jar">
+        <element id="module-output" name="h264Inspector" />
+      </element>
+      <element id="library" level="project" name="commons-io-2.5-javadoc" />
     </root>
   </artifact>
 </component>

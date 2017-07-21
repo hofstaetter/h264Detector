@@ -4,103 +4,70 @@ import main.java.org.frezy.h264.Frame;
 import main.java.org.frezy.h264.Stream;
 import main.java.org.frezy.h264.VideoFrame;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 
-import static main.java.org.frezy.h264.VideoFrame.PictType.I;
-import static main.java.org.frezy.h264.VideoFrame.PictType.P;
+import static main.java.org.frezy.h264.VideoFrame.PictType.*;
+import static main.java.org.frezy.h264Detector.Main.DEBUG;
 
 /**
  * Created by matthias on 06.06.17.
  */
 public class BitrateDetector extends Detector implements Observer {
-    private double averageDefaultBitrate = 0.0;
-
-    private boolean sync = false;
+    private long startTime = System.nanoTime();
 
     public BitrateDetector(Stream stream) {
         super(stream);
 
         stream.addObserver(this);
-        this.averageDefaultBitrate = -1.0;
     }
 
-    private short detectCounter = 0;
+    //private short detectCounter = 0;
+    private boolean movement = false;
 
-    public void detect(VideoFrame videoFrame) {
-        if((averageDefaultBitrate + (averageDefaultBitrate * 0.10)) < videoFrame.getPktSize()) {
-            if(this.detectCounter == 0)
-                if(!super.state)
-                    detected(true);
-            if(this.detectCounter < 5)
-                this.detectCounter++;
-        } else {
-            if(this.detectCounter == 0)
-                if(super.state)
-                    detected(false);
-            if(this.detectCounter > -5)
-                this.detectCounter--;
+    public void detect() {
+        if(stableBuffer.size() != STABLEBUFFER_SIZE) return;
+        Boolean[] booleans = new Boolean[STABLEBUFFER_SIZE];
+        booleans = stableBuffer.toArray(booleans);
+
+        //if booleans < 2
+
+        if(isMovementStart(booleans) && !movement) {//CASE DETECT MOVEMENT
+            movement = !movement;
+            detected();
+        }
+        else if(isMovmentEnd(booleans) && movement) {
+            movement = !movement;
+            detected();
         }
     }
 
-    public void detected(boolean state) {
-        System.out.println("MOVEMENT CHANGED! " + state);
-        super.detected(state);
+    private boolean isMovementStart(Boolean[] booleans) {
+        if(!booleans[booleans.length - 1]) return false;
+
+        for(int i = 0; i <= booleans.length - 2; i++) {
+            if(booleans[i]) return false;
+        }
+        return true;
     }
 
-    private int resyncCounter = 0;
+    private boolean isMovmentEnd(Boolean[] booleans) {
+        if(booleans[booleans.length - 1]) return false;
 
-    public void resync(VideoFrame videoFrame) {
-        //case bitrate rise
-        //TODO
-
-        //case bitrate drop
-        if((averageDefaultBitrate - (averageDefaultBitrate * 0.3)) > videoFrame.getPktSize()) {
-            resyncCounter++;
-
-            if(resyncCounter >= 24) {
-                sync = false;
-                averageDefaultBitrate = 0;
-                framesCount = 0;
-                resyncCounter = 0;
-            }
-        } else {
-            resyncCounter = 0;
+        for(int i = 0; i <= booleans.length - 2; i++) {
+            if(!booleans[i]) return false;
         }
+        return true;
     }
 
-    private int syncCount = 0;
-    private long framesCount = 0;
-
-    public void sync(VideoFrame videoFrame) {
-        if(videoFrame.getPictType() == I) return;
-
-        if(averageDefaultBitrate == -1) {
-            averageDefaultBitrate = videoFrame.getPktSize();
-            return;
-        }
-        double newAverageDefaultBitrate = 0.1 * videoFrame.getPktSize() + 0.9 * averageDefaultBitrate;
-
-        double differenceBetweenAverages = (newAverageDefaultBitrate > averageDefaultBitrate) ? newAverageDefaultBitrate - averageDefaultBitrate : averageDefaultBitrate - newAverageDefaultBitrate; //diffence between old and new average
-
-        //if
-        if(averageDefaultBitrate * 0.05 < differenceBetweenAverages) {
-            syncCount = 0;
-            averageDefaultBitrate = newAverageDefaultBitrate;
-            //System.out.println("SYNC RESET");
-            return;
-        }
-
-        averageDefaultBitrate = newAverageDefaultBitrate;
-
-        syncCount++;
-
-        if(syncCount >= 96) sync = true;
-
-        //System.out.println(averageDefaultBitrate);
+    public void detected() {
+        if(DEBUG)
+            System.out.println("MOVEMENT CHANGED! " + movement);
+        super.detected(movement);
     }
 
     @Override
@@ -110,39 +77,91 @@ public class BitrateDetector extends Detector implements Observer {
         if(frame instanceof VideoFrame) {
             VideoFrame videoFrame = (VideoFrame) frame;
 
-            if(sync) {
-                detect(videoFrame);
-                resync(videoFrame);
-                stable(videoFrame);
-            }
-            else sync(videoFrame);
+            refreshFrameBuffer(videoFrame);
+            refreshMovingAverage(videoFrame);
+            refreshFlatten();
+            refreshStable();
+            detect();
+            if(DEBUG)
+                writeToCSV(videoFrame);
         }
     }
 
-    //test
-    private final int STABLE_BUFFER_SIZE = 480;
-    private Queue<Boolean> stableList = new ArrayBlockingQueue<Boolean>(STABLE_BUFFER_SIZE);
+    private final int FRAMESIZEBUFFER_SIZE = 240;
+    private ArrayDeque<Integer> frameSizeBuffer = new ArrayDeque<Integer>(FRAMESIZEBUFFER_SIZE);
 
-    public void stable(VideoFrame videoFrame) {
+    private void refreshFrameBuffer(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == I) return;
 
-        if(stableList.size() == STABLE_BUFFER_SIZE) stableList.remove();
+        if(frameSizeBuffer.size() == FRAMESIZEBUFFER_SIZE) frameSizeBuffer.removeLast();
+        frameSizeBuffer.addFirst(videoFrame.getPktSize());
+    }
 
-        double newAverageDefaultBitrate = 0.01 * videoFrame.getPktSize() + 0.99 * averageDefaultBitrate;
-        if(newAverageDefaultBitrate > averageDefaultBitrate) { //rise
-            stableList.add(true);
-        } else if (newAverageDefaultBitrate < averageDefaultBitrate) { //fall
-            stableList.add(false);
-        } else return;
+    private final int MOVINGAVERAGEBUFFER_SIZE = 240;
+    private ArrayDeque<Double> movingAverageBuffer = new ArrayDeque<Double>(MOVINGAVERAGEBUFFER_SIZE);
 
-        int count = 0;
-        for(Boolean b : stableList) {
-            if(b) count++;
-            else count--;
+    private void refreshMovingAverage(VideoFrame videoFrame) {
+        if(videoFrame.getPictType() == I) return;
+
+        //refresh actual moving average value
+        if(movingAverageBuffer.isEmpty()) movingAverageBuffer.addFirst((double)videoFrame.getPktSize());
+        if(movingAverageBuffer.size() == MOVINGAVERAGEBUFFER_SIZE) movingAverageBuffer.removeLast();
+        movingAverageBuffer.addFirst(0.001 * videoFrame.getPktSize() + 0.999 * movingAverageBuffer.getFirst());
+    }
+
+    private final int FLATTEN_BUFFER_SIZE = 240;
+    private final int FLATTEN_SIZE = 50;
+    private ArrayDeque<Double> flattenBuffer = new ArrayDeque<Double>(FLATTEN_BUFFER_SIZE);
+
+    private void refreshFlatten() {
+        if(flattenBuffer.size() == FLATTEN_BUFFER_SIZE) flattenBuffer.removeLast();
+
+        if(frameSizeBuffer.size() < FLATTEN_SIZE) {
+            flattenBuffer.addFirst(-1.0);
+            return;
         }
 
-        averageDefaultBitrate = newAverageDefaultBitrate;
+        flattenBuffer.addFirst(frameSizeBuffer.stream().limit(FLATTEN_SIZE).mapToInt(Integer::intValue).average().getAsDouble());
+    }
 
-        System.out.println("STABLE: " + count);
+    private final int STABLEBUFFER_SIZE = 8;
+    private final int STABLE_SIZE = 60;
+    private ArrayDeque<Boolean> stableBuffer = new ArrayDeque<>(STABLEBUFFER_SIZE);
+
+    private void refreshStable() {
+        if(stableBuffer.size() == STABLEBUFFER_SIZE) stableBuffer.removeLast();
+
+        if(flattenBuffer.size() < STABLE_SIZE + FLATTEN_SIZE) {
+            stableBuffer.addFirst(true);
+            return;
+        }
+
+        long stable = flattenBuffer.stream().limit(STABLE_SIZE).filter(i -> Math.abs(i - flattenBuffer.getFirst()) <= 500).count();
+        stableBuffer.addFirst( stable >= STABLE_SIZE);
+        System.out.println(stable);
+    }
+
+
+    //Write to CSV
+    FileWriter fileWriter;
+    boolean first = true;
+
+    private void writeToCSV(VideoFrame videoFrame) {
+        if(frameSizeBuffer.isEmpty() || movingAverageBuffer.isEmpty() || flattenBuffer.isEmpty() || stableBuffer.isEmpty()) return;
+        try {
+            if (first) {
+                fileWriter = new FileWriter("stats.csv");
+                fileWriter.write("realtime;pktDtsTime;pktPos;pktSize;codedPictureNumber;movingAverage;flatten;stable\n");
+                fileWriter.flush();
+                first = false;
+            }
+
+            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktDts() + ";" + videoFrame.getPktPos() + ";" +  videoFrame.getPktSize() + ";" + videoFrame.getCodedPictureNumber() + ";" + movingAverageBuffer.getFirst().toString().replace('.', ',') + ";" + flattenBuffer.getFirst().toString().replace(".", ",") + ";" + (stableBuffer.getFirst() ? "5000" : "10000") + "\n");
+            fileWriter.flush();
+
+            //System.out.println(frameSizeBuffer.getFirst() + "|" + movingAverageBuffer.getFirst() + "|" + flattenBuffer.getFirst() + "|" + stableBuffer.getFirst());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

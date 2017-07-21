@@ -15,50 +15,52 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
+import static main.java.org.frezy.h264Detector.Main.DEBUG;
+import static main.java.org.frezy.h264Detector.Main.INPUT;
+import static main.java.org.frezy.h264Detector.Main.STREAM;
+
 /**
  * Created by matthias on 09.05.17.
  */
 
 public class Stream {
-    private final CyclicBarrier gate = new CyclicBarrier(2);
-    private final File tempDirectory = new File("tmp");
+    //private final CyclicBarrier gate = new CyclicBarrier(2);
+    //private final File tempDirectory = new File("tmp");
 
     private Thread frameReaderThread;
     private Thread frameCaptureThread;
     private String input;
 
     private FrameReader frameReader;
-    private FrameCapture frameCapture;
+    //private FrameCapture frameCapture;
     private StreamBuffer streamBuffer;
 
     public Stream(String input) {
         this.input = input;
 
         this.frameReader = new FrameReader(this.input);
-        this.frameCapture = new FrameCapture(this.input);
+        //this.frameCapture = new FrameCapture(this.input);
         this.frameReaderThread = new Thread(this.frameReader);
-        this.frameCaptureThread = new Thread(this.frameCapture);
+        //this.frameCaptureThread = new Thread(this.frameCapture);
 
-        this.streamBuffer = new StreamBuffer(this);
-
-        try {
+        /*try {
             if(tempDirectory.mkdir())
                 System.out.println("created Directory");
             FileUtils.cleanDirectory(tempDirectory);
             System.out.println(tempDirectory.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
     public void open() {
         this.frameReaderThread.start();
-        this.frameCaptureThread.start();
+        //this.frameCaptureThread.start();
     }
 
     public void close() {
         this.frameReaderThread.interrupt();
-        this.frameCaptureThread.interrupt();
+        //this.frameCaptureThread.interrupt();
     }
 
     public void addObserver(Observer o) {
@@ -67,17 +69,20 @@ public class Stream {
 
     //region Getter and Setters
 
-    public String getInput() {
-        return input;
-    }
+
+    /*public File getTempDirectory() {
+        return tempDirectory;
+    }*/
 
     public StreamBuffer getStreamBuffer() {
-        return streamBuffer;
+        if(this.streamBuffer == null)
+            this.streamBuffer = new StreamBuffer(this);
+        return this.streamBuffer;
     }
 
     //endregion
 
-    class FrameCapture extends Observable implements Runnable {
+    /*class FrameCapture extends Observable implements Runnable {
         private String input;
 
         public FrameCapture(String input) {
@@ -86,6 +91,7 @@ public class Stream {
 
         @Override
         public void run() {
+            boolean first = true;
             try {
                 while (!Thread.interrupted()) {
                     gate.await();
@@ -94,7 +100,6 @@ public class Stream {
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                     BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
-                    System.out.println("Starting FrameCapture thraed...");
 
                     long count = 0;
                     File[] files;
@@ -123,7 +128,7 @@ public class Stream {
             }
             System.out.println("Stream ends...");
         }
-    }
+    }*/
 
     class FrameReader extends Observable implements Runnable {
         private String input;
@@ -136,15 +141,16 @@ public class Stream {
         public void run() {
             try {
                 while (!Thread.interrupted()) {
-                    gate.await();
+                    //gate.await();
                     Process process = Runtime.getRuntime().exec("./ffprobe " + this.input + " -show_frames "); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
 
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    //BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                    BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
-                    System.out.println("Starting FrameReader thread...");
+                    System.out.print("Waiting for " + INPUT + "...");
 
                     String string;
+
                     String[] framestring = new String[25];
                     int count = 0;
                     while ((string = stdInput.readLine()) != null) {
@@ -162,6 +168,8 @@ public class Stream {
                                 frame = new AudioFrame(framestring);
                             }
 
+                            //System.out.println(frame.toString());
+
                             this.setChanged();
                             this.notifyObservers(frame);
 
@@ -169,13 +177,8 @@ public class Stream {
                             count = 0;
                         }
                     }
-                    Thread.sleep(1000);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (BrokenBarrierException e) {
                 e.printStackTrace();
             }
             System.out.println("Stream ends...");
