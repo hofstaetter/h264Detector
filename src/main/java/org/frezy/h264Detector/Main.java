@@ -18,16 +18,17 @@ import java.io.InputStreamReader;
 public class Main {
     public static String INPUT;
     public static Stream STREAM;
-    public static Detector DETECTOR;
+    private static Detector DETECTOR;
     public static boolean DEBUG = false;
+    public static boolean LOG = false;
 
     public static void main(String[] args) {
         //main.java.org.frezy.h264Inspector.Graph.main(args);
 
-        System.out.println("streamwatch | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com) | Matthias.Hofstaetter@fau.de");
+        System.out.println("streamdetector | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com) | Matthias.Hofstaetter@fau.de");
 
         if(args.length < 1) {
-            System.out.println("USAGE: java -jar streamwatch.jar STREAM_SOURCE [-b] [-fx PATH] [-dbg]");
+            System.out.println("USAGE: java -jar streamdetector.jar STREAM_SOURCE [-b] [-fx PATH] [-dbg] [-log]");
             return;
         }
         //read input source
@@ -37,18 +38,28 @@ public class Main {
         STREAM.open();
 
         for(int i = 1; i < args.length; i++) {
-            if(args[i].equals("-b")) {
-                DETECTOR = new BitrateDetector(STREAM);
-                System.out.println("Bitrate detector activated!");
-            } else if(args[i].equals("-fx")) {
-                i++;
-                new FolderExecutor(DETECTOR, new File(args[i]));
-                System.out.println(args[i] + " will be executed on detection.");
-            } else if(args[i].equals("-ss")) {
-                new StreamStatistics(STREAM);
-            } else if(args[i].equals("-dbg")) {
-                DEBUG = true;
-                System.out.println("DEBUG activated!");
+            switch (args[i]) {
+                case "-b":
+                    DETECTOR = new BitrateDetector(STREAM);
+                    System.out.println("Bitrate detector activated!");
+                    break;
+                case "-fx":
+                    i++;
+                    new FolderExecutor(DETECTOR, new File(args[i]));
+                    System.out.println(args[i] + " will be executed on detection.");
+                    case "-ss":
+                    new StreamStatistics(STREAM);
+                    break;
+                case "-dbg":
+                    DEBUG = true;
+                    System.out.println("DEBUG activated!");
+                    break;
+                case "-log":
+                    LOG = true;
+                    System.out.println("LOG activated!");
+                    break;
+                default:
+                    break;
             }
         }
     }
