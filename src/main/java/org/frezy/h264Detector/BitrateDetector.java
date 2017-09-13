@@ -24,16 +24,19 @@ import static main.java.org.frezy.h264Detector.Main.LOG;
  */
 public class BitrateDetector extends Detector implements Observer {
     private long startTime = System.nanoTime();
-    //private MovingAverage movingAverage;
+    private MovingAverage movingAverage;
     private ExponentionalMovingAverage exponentionalMovingAverage;
+    private Flatten flatten;
     private boolean movement = false;
 
     public BitrateDetector(Stream stream) {
         super(stream);
-        stream.addObserver(this);
 
-        //movingAverage = new MovingAverage(this.stream);
+        movingAverage = new MovingAverage(this.stream);
         exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream);
+        flatten = new Flatten(this.stream);
+
+        stream.addObserver(this);
     }
 
     public void detect() {
@@ -70,9 +73,9 @@ public class BitrateDetector extends Detector implements Observer {
 
             //refreshFlatten();
             //refreshStable();
+            System.out.print("SIZE: " + videoFrame.getPktSize() + " ");
             detect();
-            if(LOG)
-                writeToCSV(videoFrame);
+            writeToCSV(videoFrame);
             /*if(DEBUG)
                 writeToConsole(videoFrame);*/
         }
@@ -81,7 +84,7 @@ public class BitrateDetector extends Detector implements Observer {
 
     private void writeToConsole(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == VideoFrame.PictType.P)
-            System.out.println(new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + ": " + videoFrame.getPktPts() + " | " + videoFrame.getPktSize() + " | " + exponentionalMovingAverage.buffer.getFirst());
+            System.out.println(new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + ": " + videoFrame.getPktPts() + " | " + videoFrame.getPktSize() + " | " + exponentionalMovingAverage.buffer.getFirst().toString().replace('.', ','));
     }
 
     /*private ArrayDeque<Integer> frameSizeBuffer = new ArrayDeque<Integer>(BUFFER_SIZE);
@@ -127,10 +130,7 @@ public class BitrateDetector extends Detector implements Observer {
         long stable = flattenBuffer.stream().limit(STABLE_SIZE).filter(i -> Math.abs(i - flattenBuffer.getFirst()) <= 500).count();
         stableBuffer.addFirst( stable >= STABLE_SIZE);
 
-        //if(DEBUG) System.out.println(stable);
-    }*/
-
-
+*/
     //Write to CSV
     FileWriter fileWriter;
     boolean first = true;
@@ -138,15 +138,19 @@ public class BitrateDetector extends Detector implements Observer {
     private void writeToCSV(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == I) return;
         if(this.stream.getBuffer().isEmpty()) return;
+
+        if(exponentionalMovingAverage == null || movingAverage == null || flatten == null) return;
+        if(exponentionalMovingAverage.buffer.isEmpty() || movingAverage.buffer.isEmpty() || flatten.buffer.isEmpty()) return;
+
         try {
             if (first) {
                 fileWriter = new FileWriter("stats.csv");
-                fileWriter.write("realtime;pktDtsTime;pktSize;codedPictureNumber;movingAverage;flatten;stable\n");
+                fileWriter.write("realtime;pktDtsTime;pktSize;codedPictureNumber;movingAverage\n");
                 fileWriter.flush();
                 first = false;
             }
 
-            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + videoFrame.getCodedPictureNumber() + "\n");
+            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + videoFrame.getCodedPictureNumber() + ";" + exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + flatten.buffer.getFirst().toString().replace(".", ",") + "\n");
             fileWriter.flush();
 
             //System.out.println(frameSizeBuffer.getFirst() + "|" + movingAverageBuffer.getFirst() + "|" + flattenBuffer.getFirst() + "|" + stableBuffer.getFirst());

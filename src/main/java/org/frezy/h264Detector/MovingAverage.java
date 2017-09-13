@@ -14,7 +14,7 @@ import static main.java.org.frezy.h264.VideoFrame.PictType.I;
 public class MovingAverage implements Observer {
     private Stream stream;
 
-    private ArrayDeque<Double> buffer;
+    public ArrayDeque<Double> buffer;
     private long[] tempBuffer;
 
     private long[] binomialCoefficients;

@@ -35,7 +35,6 @@ public class Main {
         INPUT = args[0];
 
         STREAM = new Stream(INPUT);
-        STREAM.open();
 
         for(int i = 1; i < args.length; i++) {
             switch (args[i]) {
@@ -62,5 +61,7 @@ public class Main {
                     break;
             }
         }
+
+        STREAM.open();
     }
 }
