@@ -24,14 +24,16 @@ public class Flatten implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-        if(this.stream.getBuffer().size() < 50) return;
         Frame frame = (Frame) arg;
 
         if(frame instanceof VideoFrame) {
             VideoFrame videoFrame = (VideoFrame) frame;
             if (videoFrame.getPictType() == I) return;
 
-            buffer.addFirst(this.stream.getBuffer().stream().filter(f -> f instanceof VideoFrame).map(VideoFrame.class::cast).filter(f -> f.getPictType() != VideoFrame.PictType.I).limit(50).mapToDouble(f -> f.getPktSize()).average().getAsDouble());
+            if(this.stream.getBuffer().size() < 50)
+                buffer.addFirst((double)videoFrame.getPktSize());
+            else
+                buffer.addFirst(this.stream.getBuffer().stream().filter(f -> f instanceof VideoFrame).map(VideoFrame.class::cast).filter(f -> f.getPictType() != VideoFrame.PictType.I).limit(50).mapToDouble(f -> f.getPktSize()).average().getAsDouble());
         }
     }
 }

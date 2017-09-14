@@ -3,6 +3,7 @@ package main.java.org.frezy.h264;
 /**
  * Created by matthias on 08.05.17.
  */
+
 public class AspectRatio {
     private int x;
     private int y;

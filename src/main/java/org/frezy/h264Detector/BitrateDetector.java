@@ -4,20 +4,14 @@ import main.java.org.frezy.h264.Frame;
 import main.java.org.frezy.h264.Stream;
 import main.java.org.frezy.h264.VideoFrame;
 
-import java.io.DataOutput;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.Calendar;
 import java.util.Observable;
 import java.util.Observer;
 
-import static main.java.org.frezy.h264.Stream.BUFFER_SIZE;
 import static main.java.org.frezy.h264.VideoFrame.PictType.*;
-import static main.java.org.frezy.h264Detector.Main.DEBUG;
-import static main.java.org.frezy.h264Detector.Main.LOG;
 
 /**
  * Created by matthias on 06.06.17.
@@ -25,6 +19,7 @@ import static main.java.org.frezy.h264Detector.Main.LOG;
 public class BitrateDetector extends Detector implements Observer {
     private long startTime = System.nanoTime();
     private MovingAverage movingAverage;
+    private BinomialMovingAverage binomialMovingAverage;
     private ExponentionalMovingAverage exponentionalMovingAverage;
     private Flatten flatten;
     private boolean movement = false;
@@ -33,6 +28,7 @@ public class BitrateDetector extends Detector implements Observer {
         super(stream);
 
         movingAverage = new MovingAverage(this.stream);
+        binomialMovingAverage = new BinomialMovingAverage(this.stream);
         exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream);
         flatten = new Flatten(this.stream);
 
@@ -40,10 +36,24 @@ public class BitrateDetector extends Detector implements Observer {
     }
 
     public void detect() {
-        if(exponentionalMovingAverage.buffer.size() < 50) return;
+        if(flatten.buffer.isEmpty()) return;
+
+        if(flatten.buffer.stream().limit(50).filter(f -> Math.abs(flatten.buffer.getFirst() - f) < 500).count() >= 50) {
+            if(movement) {
+                movement = !movement;
+                System.out.println("FALSE");
+            }
+        } else {
+            if(!movement) {
+                movement = !movement;
+                System.out.println("TRUE");
+            }
+        }
+
+        /*if(exponentionalMovingAverage.buffer.size() < 50) return;
         double avg = exponentionalMovingAverage.buffer.stream().limit(50).mapToDouble(Double::doubleValue).average().getAsDouble();
         double diff = exponentionalMovingAverage.buffer.stream().limit(50).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / 50;
-        System.out.println("DIFF: " + diff);
+        //System.out.println("DIFF: " + diff);
 
         if(diff > (avg * 0.05)) {
             if (!movement) {
@@ -55,8 +65,7 @@ public class BitrateDetector extends Detector implements Observer {
                 movement = !movement;
                 detected();
             }
-        }
-
+        }*/
     }
 
     public void detected() {
@@ -71,9 +80,8 @@ public class BitrateDetector extends Detector implements Observer {
         if(frame instanceof VideoFrame) {
             VideoFrame videoFrame = (VideoFrame) frame;
 
-            //refreshFlatten();
-            //refreshStable();
-            System.out.print("SIZE: " + videoFrame.getPktSize() + " ");
+            if(!flatten.buffer.isEmpty())
+            System.out.println("SIZE: " + videoFrame.getPktSize() + " FLATTEN: " + flatten.buffer.getFirst());
             detect();
             writeToCSV(videoFrame);
             /*if(DEBUG)
@@ -84,7 +92,7 @@ public class BitrateDetector extends Detector implements Observer {
 
     private void writeToConsole(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == VideoFrame.PictType.P)
-            System.out.println(new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + ": " + videoFrame.getPktPts() + " | " + videoFrame.getPktSize() + " | " + exponentionalMovingAverage.buffer.getFirst().toString().replace('.', ','));
+            System.out.println(new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + ": " + videoFrame.getPktPts() + " | " + videoFrame.getPktSize());
     }
 
     /*private ArrayDeque<Integer> frameSizeBuffer = new ArrayDeque<Integer>(BUFFER_SIZE);
@@ -133,24 +141,19 @@ public class BitrateDetector extends Detector implements Observer {
 */
     //Write to CSV
     FileWriter fileWriter;
-    boolean first = true;
 
     private void writeToCSV(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == I) return;
         if(this.stream.getBuffer().isEmpty()) return;
 
-        if(exponentionalMovingAverage == null || movingAverage == null || flatten == null) return;
-        if(exponentionalMovingAverage.buffer.isEmpty() || movingAverage.buffer.isEmpty() || flatten.buffer.isEmpty()) return;
+        if(flatten == null) return;
+        if(flatten.buffer.isEmpty()) return;
 
         try {
-            if (first) {
+            if(fileWriter == null)
                 fileWriter = new FileWriter("stats.csv");
-                fileWriter.write("realtime;pktDtsTime;pktSize;codedPictureNumber;movingAverage\n");
-                fileWriter.flush();
-                first = false;
-            }
 
-            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + videoFrame.getCodedPictureNumber() + ";" + exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + flatten.buffer.getFirst().toString().replace(".", ",") + "\n");
+            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + flatten.buffer.getFirst().toString().replace(".", ",") + ";" + binomialMovingAverage.buffer.getFirst().toString().replace(".",",") + ";" + exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + ((movement) ? "10000" : "5000") + "\n");
             fileWriter.flush();
 
             //System.out.println(frameSizeBuffer.getFirst() + "|" + movingAverageBuffer.getFirst() + "|" + flattenBuffer.getFirst() + "|" + stableBuffer.getFirst());

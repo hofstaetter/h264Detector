@@ -95,7 +95,7 @@ public class Stream implements Observer {
         }
 
         if(this.buffer.size() >= BUFFER_SIZE) {
-            this.buffer.poll();
+            this.buffer.pollLast();
         }
         this.buffer.addFirst(frame);
     }
