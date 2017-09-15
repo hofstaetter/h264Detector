@@ -24,7 +24,6 @@ public class FileExecutor extends Executor implements Observer {
         if((boolean)arg) {
             HashMap<String, String> parameters = new HashMap<String, String>();
             parameters.put("input", INPUT);
-            //parameters.put("framesDir", this.detector.stream.getTempDirectory().getAbsolutePath());
 
             Executeable executeable = Executeable.getScriptClass(this.file, parameters);
             Thread thread = new Thread(executeable);

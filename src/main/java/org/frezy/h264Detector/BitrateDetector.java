@@ -84,7 +84,7 @@ public class BitrateDetector extends Detector implements Observer {
             System.out.println("SIZE: " + videoFrame.getPktSize() + " FLATTEN: " + flatten.buffer.getFirst());
             detect();
             writeToCSV(videoFrame);
-            /*if(DEBUG)
+            /*if(VERBOSE)
                 writeToConsole(videoFrame);*/
         }
     }

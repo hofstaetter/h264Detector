@@ -19,7 +19,7 @@ public class ExponentionalMovingAverage implements Observer {
 
     public ExponentionalMovingAverage(Stream stream) {
         this.stream = stream;
-        this.alpha = 0.01;
+        this.alpha = 0.1;
         this.buffer = new ArrayDeque<>(100);
 
         this.stream.addObserver(this);

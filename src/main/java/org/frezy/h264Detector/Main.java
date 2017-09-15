@@ -1,6 +1,10 @@
 package main.java.org.frezy.h264Detector;
 
 import main.java.org.frezy.h264.Stream;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
 
 import java.io.File;
 
@@ -11,12 +15,9 @@ public class Main {
     public static String INPUT;
     public static Stream STREAM;
     private static Detector DETECTOR;
-    public static boolean DEBUG = false;
-    public static boolean LOG = false;
+    public static boolean VERBOSE = false;
 
     public static void main(String[] args) {
-        //main.java.org.frezy.h264Inspector.Graph.main(args);
-
         System.out.println("streamdetector | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com) | Matthias.Hofstaetter@fau.de");
 
         if(args.length < 1) {
@@ -28,29 +29,33 @@ public class Main {
 
         STREAM = new Stream(INPUT);
 
-        for(int i = 1; i < args.length; i++) {
-            switch (args[i]) {
-                case "-b":
-                    DETECTOR = new BitrateDetector(STREAM);
-                    System.out.println("Bitrate detector activated!");
-                    break;
-                case "-fx":
-                    i++;
-                    new FolderExecutor(DETECTOR, new File(args[i]));
-                    System.out.println(args[i] + " will be executed on detection.");
-                    break;
-                case "-dbg":
-                    DEBUG = true;
-                    System.out.println("DEBUG activated!");
-                    break;
-                case "-log":
-                    LOG = true;
-                    System.out.println("LOG activated!");
-                    break;
-                default:
-                    break;
+        try {
+            Options options = new Options();
+            options.addOption("b", false, "activate Bitrate detector");
+            options.addOption("f", true, "folder to execute");
+            options.addOption("v", false, "enable debug mode");
+
+            CommandLineParser commandLineParser = new DefaultParser();
+            CommandLine commandLine = commandLineParser.parse(options, args);
+
+            if (commandLine.hasOption("b")) {
+                DETECTOR = new BitrateDetector(STREAM);
+                System.out.println("Bitrate detector activated!");
             }
+
+            if (commandLine.hasOption("f")) {
+                new FolderExecutor(DETECTOR, new File(commandLine.getOptionValue("f")));
+                System.out.println(commandLine.getOptionValue("f") + " will be executed on detection.");
+            }
+
+            if (commandLine.hasOption("v")) {
+                VERBOSE = true;
+                System.out.println("VERBOSE activated!");
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
+
 
         STREAM.open();
     }

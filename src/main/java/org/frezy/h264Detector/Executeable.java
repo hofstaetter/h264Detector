@@ -50,7 +50,7 @@ abstract class Executeable implements Runnable {
     protected String concatParameters(String string, HashMap<String, String> parameters) {
         StringBuilder stringBuilder = new StringBuilder(string);
         for(Map.Entry<String, String> entry : parameters.entrySet()) {
-            stringBuilder.append(" " + entry.getKey() + "=" + entry.getValue());
+            stringBuilder.append(" " + entry.getKey() + ((entry.getValue() == "") ? "=" + entry.getValue() : "" ));
         }
         return stringBuilder.toString();
     }

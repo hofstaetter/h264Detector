@@ -1,24 +1,13 @@
 package main.java.org.frezy.h264;
 
-import org.apache.commons.io.FileUtils;
-
-import javax.swing.plaf.synth.SynthTextAreaUI;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.CyclicBarrier;
 
-import static main.java.org.frezy.h264Detector.Main.DEBUG;
 import static main.java.org.frezy.h264Detector.Main.INPUT;
-import static main.java.org.frezy.h264Detector.Main.STREAM;
 
 /**
  * Created by matthias on 09.05.17.
@@ -187,7 +176,7 @@ public class Stream implements Observer {
                             System.out.println("done");
                             first = false;
                         }
-                        /*if(DEBUG)
+                        /*if(VERBOSE)
                             System.out.println(string);*/
 
                         framestring[count] = string;
