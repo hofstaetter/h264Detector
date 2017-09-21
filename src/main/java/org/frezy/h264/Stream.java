@@ -8,15 +8,14 @@ import java.util.Observer;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static main.java.org.frezy.h264Detector.Main.INPUT;
+import static main.java.org.frezy.h264Detector.Main.VERBOSE;
 
 /**
  * Created by matthias on 09.05.17.
  */
 
 public class Stream implements Observer {
-    public static final short BUFFER_SIZE = 24 * 5;
-    //private final CyclicBarrier gate = new CyclicBarrier(2);
-    //private final File tempDirectory = new File("tmp");
+    public static short BUFFER_SIZE = 24 * 5;
 
     private String input;
 
@@ -27,18 +26,22 @@ public class Stream implements Observer {
 
     private long startPts = -1;
 
-    //private Thread frameCaptureThread;
-    //private FrameCapture frameCapture;
-
     public ConcurrentLinkedDeque<Frame> getBuffer() {
         return buffer;
     }
 
-    public void setBuffer(ConcurrentLinkedDeque<Frame> buffer) {
-        this.buffer = buffer;
+    public Stream(String input) {
+        this.input = input;
+
+        this.frameReader = new FrameReader(this.input);
+        this.frameReaderThread = new Thread(this.frameReader);
+
+        this.buffer = new ConcurrentLinkedDeque<>();
+
+        this.frameReader.addObserver(this);
     }
 
-    public Stream(String input) {
+    public Stream(String input, short bufferSize) {
 
         this.input = input;
 
@@ -47,31 +50,20 @@ public class Stream implements Observer {
 
         this.buffer = new ConcurrentLinkedDeque<>();
 
-        //this.frameCapture = new FrameCapture(this.input);
-        //this.frameCaptureThread = new Thread(this.frameCapture);
+        this.frameReader.addObserver(this);
 
-        /*try {
-            if(tempDirectory.mkdir())
-                System.out.println("created Directory");
-            FileUtils.cleanDirectory(tempDirectory);
-            System.out.println(tempDirectory.getAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
+        this.BUFFER_SIZE = bufferSize;
     }
 
     public void open() {
         this.frameReaderThread.start();
-        //this.frameCaptureThread.start();
     }
 
     public void close() {
         this.frameReaderThread.interrupt();
-        //this.frameCaptureThread.interrupt();
     }
 
     public void addObserver(Observer o) {
-        this.frameReader.addObserver(this);
         this.frameReader.addObserver(o);
     }
 
@@ -89,58 +81,9 @@ public class Stream implements Observer {
         this.buffer.addFirst(frame);
     }
 
-    //endregion
-
-    /*class FrameCapture extends Observable implements Runnable {
-        private String input;
-
-        public FrameCapture(String input) {
-            this.input = input;
-        }
-
-        @Override
-        public void run() {
-            boolean first = true;
-            try {
-                while (!Thread.interrupted()) {
-                    gate.await();
-                    Process process = Runtime.getRuntime().exec("./ffmpeg -i " + this.input + " -vf [in]select=eq(pict_type\\,I),showinfo[out] -vsync vfr " + tempDirectory.getAbsolutePath() + "/iframe%03d.jpeg"); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
-
-                    BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-
-                    long count = 0;
-                    File[] files;
-                    String string;
-                    while ((string = stdError.readLine()) != null) {
-                        if(string.contains("plane_checksum")) {
-                            //System.out.println(string);
-                            count++;
-                            if(count >= 24) {
-                                files = tempDirectory.listFiles();
-                                for(File file : files) {
-                                    file.delete();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    Thread.sleep(1000);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (BrokenBarrierException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Stream ends...");
-        }
-    }*/
-
     class FrameReader extends Observable implements Runnable {
         private String input;
+        private long lastResponse;
 
         public FrameReader(String input) {
             this.input = input;
@@ -149,36 +92,25 @@ public class Stream implements Observer {
         @Override
         public void run() {
             try {
-                int retry = -1;
-                boolean first = true;
+                if(VERBOSE) System.out.println("DEBUG: Trying to read from " + this.input + "...");
+
+                lastResponse = System.currentTimeMillis();
                 while (!Thread.interrupted()) {
-                    retry++;
-                    if(retry >= 5) {
-                        System.out.println("No response from stream! Please check your input.");
-                        System.exit(0);
+                    if(System.currentTimeMillis() > lastResponse + 10000) {
+                        System.out.println("No response from RTP stream!");
+                        System.exit(-1);
                     }
 
-                    //gate.await();
                     Process process = Runtime.getRuntime().exec("./ffprobe " + this.input + " -show_frames "); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
 
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-                    if(retry == 0)
-                        System.out.print("Listening to " + INPUT + "...");
+                    //BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
                     String string;
 
                     String[] framestring = new String[25];
                     int count = 0;
                     while ((string = stdInput.readLine()) != null) {
-                        if(first) {
-                            System.out.println("done");
-                            first = false;
-                        }
-                        /*if(VERBOSE)
-                            System.out.println(string);*/
-
                         framestring[count] = string;
                         count++;
                         if (string.equals("[/FRAME]")) { //frame end
@@ -187,14 +119,11 @@ public class Stream implements Observer {
                             Frame frame;
                             if (framestring[1].split("=")[1].equals("video")) {
                                 frame = new VideoFrame(framestring);
-                                /*if(((VideoFrame)frame).getPictType() == VideoFrame.PictType.I)
-                                    System.out.println("pts: " + ((VideoFrame)frame).getPktPts() + " pts_time: " + ((VideoFrame)frame).getPktPtsTime());*/
                             } else {
                                 frame = new AudioFrame(framestring);
                             }
 
-                            //System.out.println(frame.toString());
-
+                            //notify observers
                             this.setChanged();
                             this.notifyObservers(frame);
 

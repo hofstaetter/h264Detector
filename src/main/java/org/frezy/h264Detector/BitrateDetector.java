@@ -8,8 +8,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.stream.DoubleStream;
 
 import static main.java.org.frezy.h264.VideoFrame.PictType.*;
 
@@ -24,6 +26,9 @@ public class BitrateDetector extends Detector implements Observer {
     private Flatten flatten;
     private boolean movement = false;
 
+    //test
+    private LinkedList<Double> differences;
+
     public BitrateDetector(Stream stream) {
         super(stream);
 
@@ -33,10 +38,24 @@ public class BitrateDetector extends Detector implements Observer {
         flatten = new Flatten(this.stream);
 
         stream.addObserver(this);
+
+        //test
+        differences = new LinkedList<Double>();
     }
 
     public void detect() {
-        if(flatten.buffer.isEmpty()) return;
+        if(movingAverage.buffer.isEmpty()) return;
+
+        //flat twice?
+        double avg = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).sum() / 49;
+        double diff = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / 49;
+
+        //test
+        differences.add(diff);
+
+        System.out.println(diff);
+
+        /*if(flatten.buffer.isEmpty()) return;
 
         if(flatten.buffer.stream().limit(50).filter(f -> Math.abs(flatten.buffer.getFirst() - f) < 500).count() >= 50) {
             if(movement) {
@@ -48,7 +67,7 @@ public class BitrateDetector extends Detector implements Observer {
                 movement = !movement;
                 System.out.println("TRUE");
             }
-        }
+        }*/
 
         /*if(exponentionalMovingAverage.buffer.size() < 50) return;
         double avg = exponentionalMovingAverage.buffer.stream().limit(50).mapToDouble(Double::doubleValue).average().getAsDouble();
@@ -81,7 +100,7 @@ public class BitrateDetector extends Detector implements Observer {
             VideoFrame videoFrame = (VideoFrame) frame;
 
             if(!flatten.buffer.isEmpty())
-            System.out.println("SIZE: " + videoFrame.getPktSize() + " FLATTEN: " + flatten.buffer.getFirst());
+            //System.out.println("SIZE: " + videoFrame.getPktSize() + " FLATTEN: " + flatten.buffer.getFirst());
             detect();
             writeToCSV(videoFrame);
             /*if(VERBOSE)
@@ -153,7 +172,8 @@ public class BitrateDetector extends Detector implements Observer {
             if(fileWriter == null)
                 fileWriter = new FileWriter("stats.csv");
 
-            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + flatten.buffer.getFirst().toString().replace(".", ",") + ";" + binomialMovingAverage.buffer.getFirst().toString().replace(".",",") + ";" + exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + ((movement) ? "10000" : "5000") + "\n");
+            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + flatten.buffer.getFirst().toString().replace(".", ",") + ";" + binomialMovingAverage.buffer.getFirst().toString().replace(".",",") + ";"
+                    + exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + ((movement) ? "10000" : "5000") + ";" + differences.get(differences.size()-1).toString().replace(".", ",") +  "\n");
             fileWriter.flush();
 
             //System.out.println(frameSizeBuffer.getFirst() + "|" + movingAverageBuffer.getFirst() + "|" + flattenBuffer.getFirst() + "|" + stableBuffer.getFirst());
