@@ -24,7 +24,6 @@ public class BitrateDetector extends Detector implements Observer {
     private BinomialMovingAverage binomialMovingAverage;
     private ExponentionalMovingAverage exponentionalMovingAverage;
     private Flatten flatten;
-    private boolean movement = false;
 
     //test
     private LinkedList<Double> differences;
@@ -33,63 +32,32 @@ public class BitrateDetector extends Detector implements Observer {
         super(stream);
 
         movingAverage = new MovingAverage(this.stream);
-        binomialMovingAverage = new BinomialMovingAverage(this.stream);
-        exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream);
-        flatten = new Flatten(this.stream);
 
         stream.addObserver(this);
 
         //test
-        differences = new LinkedList<Double>();
+        //differences = new LinkedList<Double>();
     }
 
     public void detect() {
         if(movingAverage.buffer.isEmpty()) return;
 
-        //flat twice?
         double avg = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).sum() / 49;
         double diff = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / 49;
 
         //test
-        differences.add(diff);
+        //differences.add(diff);
+        System.out.println("THRESHOLD: " + avg * Main.SENSITIVITY + " | DIFF: " + diff);
 
-        System.out.println(diff);
-
-        /*if(flatten.buffer.isEmpty()) return;
-
-        if(flatten.buffer.stream().limit(50).filter(f -> Math.abs(flatten.buffer.getFirst() - f) < 500).count() >= 50) {
-            if(movement) {
-                movement = !movement;
-                System.out.println("FALSE");
+        if(this.state) { //movement
+            if(diff < avg * Main.SENSITIVITY) {
+                switchState();
             }
-        } else {
-            if(!movement) {
-                movement = !movement;
-                System.out.println("TRUE");
+        } else if(!this.state) { //no movement
+            if(diff > avg * Main.SENSITIVITY) {
+                switchState();
             }
-        }*/
-
-        /*if(exponentionalMovingAverage.buffer.size() < 50) return;
-        double avg = exponentionalMovingAverage.buffer.stream().limit(50).mapToDouble(Double::doubleValue).average().getAsDouble();
-        double diff = exponentionalMovingAverage.buffer.stream().limit(50).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / 50;
-        //System.out.println("DIFF: " + diff);
-
-        if(diff > (avg * 0.05)) {
-            if (!movement) {
-                movement = !movement;
-                detected();
-            }
-        } else {
-            if(movement) {
-                movement = !movement;
-                detected();
-            }
-        }*/
-    }
-
-    public void detected() {
-        System.out.println("MOVEMENT CHANGED! " + movement);
-        super.detected(movement);
+        }
     }
 
     @Override
@@ -98,20 +66,18 @@ public class BitrateDetector extends Detector implements Observer {
 
         if(frame instanceof VideoFrame) {
             VideoFrame videoFrame = (VideoFrame) frame;
-
-            if(!flatten.buffer.isEmpty())
-            //System.out.println("SIZE: " + videoFrame.getPktSize() + " FLATTEN: " + flatten.buffer.getFirst());
             detect();
-            writeToCSV(videoFrame);
-            /*if(VERBOSE)
-                writeToConsole(videoFrame);*/
+            if(Main.VERBOSE) {
+                writeToConsole(videoFrame);
+                writeToCSV(videoFrame);
+            }
         }
     }
 
 
     private void writeToConsole(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == VideoFrame.PictType.P)
-            System.out.println(new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + ": " + videoFrame.getPktPts() + " | " + videoFrame.getPktSize());
+            System.out.println(System.currentTimeMillis() + ": " + videoFrame.getCodedPictureNumber() + " | " + videoFrame.getPktSize() + " | " + movingAverage.buffer.getFirst());
     }
 
     /*private ArrayDeque<Integer> frameSizeBuffer = new ArrayDeque<Integer>(BUFFER_SIZE);
@@ -172,8 +138,8 @@ public class BitrateDetector extends Detector implements Observer {
             if(fileWriter == null)
                 fileWriter = new FileWriter("stats.csv");
 
-            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + flatten.buffer.getFirst().toString().replace(".", ",") + ";" + binomialMovingAverage.buffer.getFirst().toString().replace(".",",") + ";"
-                    + exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";" + ((movement) ? "10000" : "5000") + ";" + differences.get(differences.size()-1).toString().replace(".", ",") +  "\n");
+            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";"
+                    + ((this.state) ? "10000" : "5000"));// + ";" + differences.get(differences.size()-1).toString().replace(".", ",") +  "\n");
             fileWriter.flush();
 
             //System.out.println(frameSizeBuffer.getFirst() + "|" + movingAverageBuffer.getFirst() + "|" + flattenBuffer.getFirst() + "|" + stableBuffer.getFirst());

@@ -11,15 +11,15 @@ import java.util.Observable;
 public class Detector extends Observable {
     protected Stream stream;
 
-    protected boolean state;
+    protected boolean state = false;
 
     public Detector(Stream stream) {
         this.stream = stream;
     }
 
-    protected void detected(boolean state) {
+    protected void switchState() {
         this.setChanged();
         this.notifyObservers(state);
-        this.state = state;
+        this.state = !state;
     }
 }

@@ -39,14 +39,14 @@ public class VideoFrame extends Frame {
 
             if(pair[1].equals("N/A")) continue;
 
-            //if(pair[0].equals("width"))
-                //this.width = Integer.parseInt(pair[1]);
+            if(pair[0].equals("width"))
+                this.width = Integer.parseInt(pair[1]);
 
-            //else if(pair[0].equals("pix_fmt"))
-                //this.pixFmt = PixFmt.valueOf(pair[1]);
+            else if(pair[0].equals("pix_fmt"))
+                this.pixFmt = PixFmt.valueOf(pair[1]);
 
-            //else if(pair[0].equals("sample_aspect_ratio"))
-                //this.sampleAspectRatio = new AspectRatio(pair[1]);
+            else if(pair[0].equals("sample_aspect_ratio"))
+                this.sampleAspectRatio = new AspectRatio(pair[1]);
 
             else if(pair[0].equals("pict_type"))
                 this.pictType = PictType.valueOf(pair[1]);
@@ -54,17 +54,17 @@ public class VideoFrame extends Frame {
             else if(pair[0].equals("coded_picture_number"))
                 this.codedPictureNumber = Long.parseLong(pair[1]);
 
-            //else if(pair[0].equals("display_picture_number"))
-                //this.displayPictureNumber = Integer.parseInt(pair[1]);
+            else if(pair[0].equals("display_picture_number"))
+                this.displayPictureNumber = Integer.parseInt(pair[1]);
 
             else if(pair[0].equals("interlaced_frame"))
                 this.interlacedFrame = Integer.parseInt(pair[1]);
 
-            //else if(pair[0].equals("top_field_first"))
-                //this.topFieldFirst = Integer.parseInt(pair[1]);
+            else if(pair[0].equals("top_field_first"))
+                this.topFieldFirst = Integer.parseInt(pair[1]);
 
-            //else if(pair[0].equals("repeat_pict"))
-                //this.repeatPict = Integer.parseInt(pair[1]);
+            else if(pair[0].equals("repeat_pict"))
+                this.repeatPict = Integer.parseInt(pair[1]);
         }
     }
 

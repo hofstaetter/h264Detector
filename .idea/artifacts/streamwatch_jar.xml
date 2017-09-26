@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact name="streamwatch:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/streamwatch_jar</output-path>
+    <root id="root">
+      <element id="archive" name="streamwatch.jar">
+        <element id="module-output" name="streamwatch" />
+      </element>
+      <element id="library" level="project" name="commons-io-2.5-javadoc" />
+      <element id="library" level="project" name="commons-cli-1.4-javadoc" />
+    </root>
+  </artifact>
+</component>

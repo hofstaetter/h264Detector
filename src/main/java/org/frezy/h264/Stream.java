@@ -101,10 +101,23 @@ public class Stream implements Observer {
                         System.exit(-1);
                     }
 
-                    Process process = Runtime.getRuntime().exec("./ffprobe " + this.input + " -show_frames "); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
+                    Process process = Runtime.getRuntime().exec("./startscan.sh " + this.input); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
 
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    //BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                    BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+                    //error thread
+                    /*Thread t = new Thread() {
+                      @Override public void run() {
+                          String line;
+                          try {
+                              while ((line = stdError.readLine()) != null) {
+                                  System.out.println(line);
+                              }
+                          } catch (Exception e) { throw new Error(e) ; }
+                      }
+                    };
+                    t.start();*/
 
                     String string;
 
@@ -131,6 +144,9 @@ public class Stream implements Observer {
                             count = 0;
                         }
                     }
+                    try {
+                        //t.join();
+                    } catch (Exception e) { throw new Error(e); }
                 }
             } catch (IOException e) {
                 e.printStackTrace();

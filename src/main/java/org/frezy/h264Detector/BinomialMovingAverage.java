@@ -87,7 +87,7 @@ public class BinomialMovingAverage implements Observer {
             if (videoFrame.getPictType() == I) return;
 
             //fill buffer
-            if(this.stream.getBuffer().size() <= this.tempBuffer.length) {
+            if(this.stream.getBuffer().size() < this.tempBuffer.length) {
                 this.tempBuffer[_count--] = videoFrame.getPktSize();
                 return;
             }

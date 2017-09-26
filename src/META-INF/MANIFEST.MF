@@ -1,4 +1,5 @@
 Manifest-Version: 1.0
-Class-Path: commons-io-2.5.jar
+Class-Path: commons-io-2.5.jar commons-cli-1.4-tests.jar commons-cli-1
+ .4.jar
 Main-Class: main.java.org.frezy.h264Detector.Main
 

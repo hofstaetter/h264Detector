@@ -18,7 +18,7 @@ public class MovingAverage implements Observer {
 
     public MovingAverage(Stream stream) {
         this.stream = stream;
-        this.tempBuffer = new long[50];
+        this.tempBuffer = new long[49];
         this.buffer = new ArrayDeque<>(100);
 
         this.stream.addObserver(this);
@@ -68,7 +68,7 @@ public class MovingAverage implements Observer {
             if (videoFrame.getPictType() == I) return;
 
             //fill buffer
-            if(this.stream.getBuffer().size() <= this.tempBuffer.length) {
+            if(this.stream.getBuffer().size() < this.tempBuffer.length) {
                 this.tempBuffer[_count--] = videoFrame.getPktSize();
                 return;
             }
