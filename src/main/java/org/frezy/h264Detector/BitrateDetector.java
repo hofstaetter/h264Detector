@@ -39,22 +39,28 @@ public class BitrateDetector extends Detector implements Observer {
         //differences = new LinkedList<Double>();
     }
 
+    private double threshold = 0;
+
     public void detect() {
-        if(movingAverage.buffer.isEmpty()) return;
+        if(movingAverage.buffer.size() < 49) return;
 
         double avg = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).sum() / 49;
         double diff = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / 49;
 
+        if(!this.state)
+            this.threshold = avg;
+
         //test
         //differences.add(diff);
-        System.out.println("THRESHOLD: " + avg * Main.SENSITIVITY + " | DIFF: " + diff);
+        if(Main.VERBOSE)
+            System.out.println("THRESHOLD: " + this.threshold * Main.SENSITIVITY + " | DIFF: " + diff);
 
         if(this.state) { //movement
-            if(diff < avg * Main.SENSITIVITY) {
+            if(diff < this.threshold * Main.SENSITIVITY) {
                 switchState();
             }
         } else if(!this.state) { //no movement
-            if(diff > avg * Main.SENSITIVITY) {
+            if(diff > this.threshold * Main.SENSITIVITY) {
                 switchState();
             }
         }

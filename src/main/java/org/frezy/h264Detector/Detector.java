@@ -18,6 +18,7 @@ public class Detector extends Observable {
     }
 
     protected void switchState() {
+        System.out.println("State changed: " + state);
         this.setChanged();
         this.notifyObservers(state);
         this.state = !state;
