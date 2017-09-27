@@ -20,10 +20,9 @@ import static main.java.org.frezy.h264.VideoFrame.PictType.*;
  */
 public class BitrateDetector extends Detector implements Observer {
     private long startTime = System.nanoTime();
-    private MovingAverage movingAverage;
-    private BinomialMovingAverage binomialMovingAverage;
-    private ExponentionalMovingAverage exponentionalMovingAverage;
-    private Flatten flatten;
+    private MovingAverage movingAverage = null;
+    private BinomialMovingAverage binomialMovingAverage = null;
+    private ExponentionalMovingAverage exponentionalMovingAverage = null;
 
     //test
     private LinkedList<Double> differences;
@@ -32,8 +31,8 @@ public class BitrateDetector extends Detector implements Observer {
         super(stream);
 
         movingAverage = new MovingAverage(this.stream, Main.WIDTH);
-        binomialMovingAverage = new BinomialMovingAverage(this.stream, Main.WIDTH);
-        exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream);
+        binomialMovingAverage = new BinomialMovingAverage(this.stream, 16);
+        exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream, 0.02);
 
         stream.addObserver(this);
 
@@ -49,15 +48,16 @@ public class BitrateDetector extends Detector implements Observer {
 
         //test
         //differences.add(diff);
+
         if(Main.VERBOSE)
             System.out.println("THRESHOLD: " + Main.SENSITIVITY + " | DIFF: " + diff);
 
         if(this.state) { //movement
-            if(diff < Main.SENSITIVITY) {
+            if(diff > Main.SENSITIVITY) {
                 switchState();
             }
         } else if(!this.state) { //no movement
-            if(diff > Main.SENSITIVITY) {
+            if(diff < Main.SENSITIVITY) {
                 switchState();
             }
         }
@@ -73,7 +73,9 @@ public class BitrateDetector extends Detector implements Observer {
             VideoFrame videoFrame = (VideoFrame) frame;
             detect();
             if(Main.VERBOSE) {
-                //writeToConsole(videoFrame);
+                writeToConsole(videoFrame);
+            }
+            if(!Main.LOG.isEmpty()) {
                 writeToCSV(videoFrame);
             }
         }
@@ -137,16 +139,16 @@ public class BitrateDetector extends Detector implements Observer {
 
         try {
             if(fileWriter == null)
-                fileWriter = new FileWriter("stats.csv");
+                fileWriter = new FileWriter(Main.LOG);
 
             fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";");
-            if(!movingAverage.buffer.isEmpty()) {
+            if(movingAverage != null && !movingAverage.buffer.isEmpty()) {
                 fileWriter.write(movingAverage.buffer.getFirst().toString().replace(".", ",") + ";");
             }
-            if(!binomialMovingAverage.buffer.isEmpty()) {
+            if(binomialMovingAverage != null && !binomialMovingAverage.buffer.isEmpty()) {
                 fileWriter.write(binomialMovingAverage.buffer.getFirst().toString().replace(".", ",")+ ";");
             }
-            if(!exponentionalMovingAverage.buffer.isEmpty()) {
+            if(exponentionalMovingAverage != null && !exponentionalMovingAverage.buffer.isEmpty()) {
                 fileWriter.write(exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";");
             }
             fileWriter.write(((this.state) ? "1" : "0") + "\n");

@@ -18,6 +18,7 @@ public class Main {
     public static double SENSITIVITY = 50;
     public static boolean VERBOSE = false;
     public static int WIDTH = 29;
+    public static String LOG = "";
 
     public static void main(String[] args) {
         System.out.println("streamdetector | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com) | Matthias.Hofstaetter@fau.de");
@@ -41,6 +42,7 @@ public class Main {
             options.addOption("v", false, "enable debug mode");
             options.addOption("s", true, "sensitivity");
             options.addOption("w", true, "filter width");
+            options.addOption("l", true, "enable logging");
 
             CommandLineParser commandLineParser = new DefaultParser();
             CommandLine commandLine = commandLineParser.parse(options, args);
@@ -73,6 +75,11 @@ public class Main {
                 }
                 SENSITIVITY = Double.parseDouble(commandLine.getOptionValue("w"));
                 System.out.println("Width set to " + commandLine.getOptionValue("w"));
+            }
+
+            if(commandLine.hasOption("l")) {
+                LOG = commandLine.getOptionValue("l");
+                System.out.println("Logging enabled!");
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
