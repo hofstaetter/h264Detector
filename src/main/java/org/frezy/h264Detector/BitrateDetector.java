@@ -32,6 +32,8 @@ public class BitrateDetector extends Detector implements Observer {
         super(stream);
 
         movingAverage = new MovingAverage(this.stream, Main.WIDTH);
+        binomialMovingAverage = new BinomialMovingAverage(this.stream, Main.WIDTH);
+        exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream);
 
         stream.addObserver(this);
 
@@ -39,29 +41,23 @@ public class BitrateDetector extends Detector implements Observer {
         //differences = new LinkedList<Double>();
     }
 
-    private double threshold = 0;
-
     public void detect() {
         if(movingAverage.buffer.size() < Main.WIDTH) return;
 
         double avg = movingAverage.buffer.stream().limit(Main.WIDTH).mapToDouble(Double::doubleValue).sum() / Main.WIDTH;
         double diff = movingAverage.buffer.stream().limit(Main.WIDTH).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / Main.WIDTH;
 
-        if(!this.state)
-            this.threshold = avg;
-
         //test
         //differences.add(diff);
         if(Main.VERBOSE)
-            System.out.println("THRESHOLD: " + this.threshold * Main.SENSITIVITY + " | DIFF: " + diff);
-        System.out.println(this.state);
+            System.out.println("THRESHOLD: " + Main.SENSITIVITY + " | DIFF: " + diff);
 
         if(this.state) { //movement
-            if(diff < this.threshold * Main.SENSITIVITY) {
+            if(diff < Main.SENSITIVITY) {
                 switchState();
             }
         } else if(!this.state) { //no movement
-            if(diff > this.threshold * Main.SENSITIVITY) {
+            if(diff > Main.SENSITIVITY) {
                 switchState();
             }
         }
@@ -138,20 +134,22 @@ public class BitrateDetector extends Detector implements Observer {
 
     private void writeToCSV(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == I) return;
-        if(this.stream.getBuffer().isEmpty()) return;
-
-        if(flatten == null) return;
-        if(flatten.buffer.isEmpty()) return;
 
         try {
             if(fileWriter == null)
                 fileWriter = new FileWriter("stats.csv");
 
-            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";" + movingAverage.buffer.getFirst().toString().replace(".", ",") + ";"
-                    + ((this.state) ? "10000" : "5000"));// + ";" + differences.get(differences.size()-1).toString().replace(".", ",") +  "\n");
-            fileWriter.flush();
-
-            //System.out.println(frameSizeBuffer.getFirst() + "|" + movingAverageBuffer.getFirst() + "|" + flattenBuffer.getFirst() + "|" + stableBuffer.getFirst());
+            fileWriter.write((System.nanoTime() - startTime) + ";" + videoFrame.getPktPts() + ";" +  videoFrame.getPktSize() + ";");
+            if(!movingAverage.buffer.isEmpty()) {
+                fileWriter.write(movingAverage.buffer.getFirst().toString().replace(".", ",") + ";");
+            }
+            if(!binomialMovingAverage.buffer.isEmpty()) {
+                fileWriter.write(binomialMovingAverage.buffer.getFirst().toString().replace(".", ",")+ ";");
+            }
+            if(!exponentionalMovingAverage.buffer.isEmpty()) {
+                fileWriter.write(exponentionalMovingAverage.buffer.getFirst().toString().replace(".", ",") + ";");
+            }
+            fileWriter.write(((this.state) ? "1" : "0") + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

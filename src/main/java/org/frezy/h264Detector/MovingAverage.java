@@ -18,7 +18,7 @@ public class MovingAverage implements Observer {
 
     public MovingAverage(Stream stream) {
         this.stream = stream;
-        this.tempBuffer = new long[29];
+        this.tempBuffer = new long[49];
         this.buffer = new ArrayDeque<>(100);
 
         this.stream.addObserver(this);

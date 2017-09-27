@@ -15,7 +15,7 @@ public class Main {
     public static String INPUT;
     public static Stream STREAM;
     private static Detector DETECTOR;
-    public static double SENSITIVITY = 0.05;
+    public static double SENSITIVITY = 50;
     public static boolean VERBOSE = false;
     public static int WIDTH = 29;
 
@@ -58,8 +58,8 @@ public class Main {
             }
 
             if(commandLine.hasOption("s")) {
-                if(Double.parseDouble(commandLine.getOptionValue("s")) > 1 || Double.parseDouble(commandLine.getOptionValue("s")) < 0) {
-                    System.out.println("Please set sensitivity between 0 and 1.");
+                if(Double.parseDouble(commandLine.getOptionValue("s")) < 1) {
+                    System.out.println("Please set sensitivity higher than 1.");
                     return;
                 }
                 SENSITIVITY = Double.parseDouble(commandLine.getOptionValue("s"));
