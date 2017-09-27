@@ -31,7 +31,7 @@ public class BitrateDetector extends Detector implements Observer {
     public BitrateDetector(Stream stream) {
         super(stream);
 
-        movingAverage = new MovingAverage(this.stream);
+        movingAverage = new MovingAverage(this.stream, Main.WIDTH);
 
         stream.addObserver(this);
 
@@ -42,10 +42,10 @@ public class BitrateDetector extends Detector implements Observer {
     private double threshold = 0;
 
     public void detect() {
-        if(movingAverage.buffer.size() < 49) return;
+        if(movingAverage.buffer.size() < Main.WIDTH) return;
 
-        double avg = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).sum() / 49;
-        double diff = movingAverage.buffer.stream().limit(49).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / 49;
+        double avg = movingAverage.buffer.stream().limit(Main.WIDTH).mapToDouble(Double::doubleValue).sum() / Main.WIDTH;
+        double diff = movingAverage.buffer.stream().limit(Main.WIDTH).mapToDouble(Double::doubleValue).map(d -> Math.abs(d - avg)).sum() / Main.WIDTH;
 
         if(!this.state)
             this.threshold = avg;
@@ -54,6 +54,7 @@ public class BitrateDetector extends Detector implements Observer {
         //differences.add(diff);
         if(Main.VERBOSE)
             System.out.println("THRESHOLD: " + this.threshold * Main.SENSITIVITY + " | DIFF: " + diff);
+        System.out.println(this.state);
 
         if(this.state) { //movement
             if(diff < this.threshold * Main.SENSITIVITY) {
@@ -66,6 +67,8 @@ public class BitrateDetector extends Detector implements Observer {
         }
     }
 
+
+
     @Override
     public void update(Observable o, Object arg) {
         Frame frame = (Frame) arg;
@@ -74,7 +77,7 @@ public class BitrateDetector extends Detector implements Observer {
             VideoFrame videoFrame = (VideoFrame) frame;
             detect();
             if(Main.VERBOSE) {
-                writeToConsole(videoFrame);
+                //writeToConsole(videoFrame);
                 writeToCSV(videoFrame);
             }
         }
@@ -83,7 +86,7 @@ public class BitrateDetector extends Detector implements Observer {
 
     private void writeToConsole(VideoFrame videoFrame) {
         if(videoFrame.getPictType() == VideoFrame.PictType.P)
-            System.out.println(System.currentTimeMillis() + ": " + videoFrame.getCodedPictureNumber() + " | " + videoFrame.getPktSize() + " | " + movingAverage.buffer.getFirst());
+            System.out.println(System.currentTimeMillis() + ": " + videoFrame.getCodedPictureNumber() + " | " + videoFrame.getPictType() + " | " + videoFrame.getPktSize() + " | " + movingAverage.buffer.getFirst());
     }
 
     /*private ArrayDeque<Integer> frameSizeBuffer = new ArrayDeque<Integer>(BUFFER_SIZE);

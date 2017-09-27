@@ -10,7 +10,7 @@ public class AudioFrame extends Frame {
     }
 
     public enum ChannelLayout {
-        stereo
+        stereo, mono
     }
 
     private SampleFmt sampleFmt;

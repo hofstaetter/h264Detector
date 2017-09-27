@@ -101,7 +101,7 @@ public class Stream implements Observer {
                         System.exit(-1);
                     }
 
-                    Process process = Runtime.getRuntime().exec("./startscan.sh " + this.input); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
+                    Process process = Runtime.getRuntime().exec("./ffprobe " + this.input + " -show_frames -threads 4"); //+ " | grep 'media_type=/|pkt_pts_time=/|pkt_size=|pict_type=|coded_picture_number=|[/FRAME]'"); //TODO filter with ffmpeg (performance)
 
                     BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
                     BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
