@@ -15,16 +15,16 @@ public class Main {
     public static String INPUT;
     public static Stream STREAM;
     private static Detector DETECTOR;
-    public static double SENSITIVITY = 50;
+    public static double SENSITIVITY = 100;
     public static boolean VERBOSE = false;
-    public static int WIDTH = 29;
+    public static int WIDTH = 49;
     public static String LOG = "";
 
     public static void main(String[] args) {
-        System.out.println("streamdetector | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com) | Matthias.Hofstaetter@fau.de");
+        System.out.println("streamwatch | developed by Matthias Hofstätter | Matthias@hofstätter.com (Matthias@xn--hofsttter-z2a.com) | Matthias.Hofstaetter@fau.de");
 
         if(args.length < 1) {
-            System.out.println("USAGE: java -jar streamdetector.jar STREAM_SOURCE [-b] [-fx PATH] [-dbg] [-log]");
+            System.out.println("USAGE: java -jar streamwatch.jar STREAM_SOURCE [-s SENSITIVITY] [-w FILTER_WIDTH] [-f PATH] [-v] [-l LOG_FILE]");
             return;
         }
         //read input source
@@ -55,7 +55,7 @@ public class Main {
             }
 
             if (commandLine.hasOption("v")) {
-                VERBOSE = true;
+                Main.VERBOSE = true;
                 System.out.println("VERBOSE activated!");
             }
 

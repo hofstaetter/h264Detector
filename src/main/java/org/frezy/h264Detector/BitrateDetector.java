@@ -31,8 +31,8 @@ public class BitrateDetector extends Detector implements Observer {
         super(stream);
 
         movingAverage = new MovingAverage(this.stream, Main.WIDTH);
-        binomialMovingAverage = new BinomialMovingAverage(this.stream, 16);
-        exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream, 0.02);
+        //binomialMovingAverage = new BinomialMovingAverage(this.stream, 16);
+        //exponentionalMovingAverage = new ExponentionalMovingAverage(this.stream, 0.02);
 
         stream.addObserver(this);
 
@@ -83,8 +83,8 @@ public class BitrateDetector extends Detector implements Observer {
 
 
     private void writeToConsole(VideoFrame videoFrame) {
-        if(videoFrame.getPictType() == VideoFrame.PictType.P)
-            System.out.println(System.currentTimeMillis() + ": " + videoFrame.getCodedPictureNumber() + " | " + videoFrame.getPictType() + " | " + videoFrame.getPktSize() + " | " + movingAverage.buffer.getFirst());
+        if(videoFrame.getPictType() == VideoFrame.PictType.P) {}
+            //System.out.println(System.currentTimeMillis() + ": " + videoFrame.getCodedPictureNumber() + " | " + videoFrame.getPictType() + " | " + videoFrame.getPktSize() + " | " + movingAverage.buffer.getFirst());
     }
 
     /*private ArrayDeque<Integer> frameSizeBuffer = new ArrayDeque<Integer>(BUFFER_SIZE);
